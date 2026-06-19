@@ -6,30 +6,47 @@ project(ImGUI_SFML_OpenGL LANGUAGES CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 include(FetchContent)
-FetchContent_Declare(SFML
+
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG        1.0.3
+    GIT_SHALLOW    ON
+    SYSTEM
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(glm)
+
+FetchContent_Declare(
+    SFML
     GIT_REPOSITORY https://github.com/SFML/SFML.git
     GIT_TAG 3.0.2
     GIT_SHALLOW ON
     EXCLUDE_FROM_ALL
-    SYSTEM)
+    SYSTEM
+    )
 FetchContent_MakeAvailable(SFML)
 
-FetchContent_Declare(ImGui
+FetchContent_Declare(
+    ImGui
     GIT_REPOSITORY https://github.com/ocornut/imgui
     GIT_TAG v1.91.9
     GIT_SHALLOW ON
     EXCLUDE_FROM_ALL
-    SYSTEM)
+    SYSTEM
+    )
 FetchContent_MakeAvailable(ImGui)
 FetchContent_GetProperties(ImGui SOURCE_DIR IMGUI_DIR)
 
 set(IMGUI_SFML_FIND_SFML OFF)
-FetchContent_Declare(ImGui-SFML
+FetchContent_Declare(
+    ImGui-SFML
     GIT_REPOSITORY https://github.com/SFML/imgui-sfml
     GIT_TAG v3.0
     GIT_SHALLOW ON
     EXCLUDE_FROM_ALL
-    SYSTEM)
+    SYSTEM
+    )
 FetchContent_MakeAvailable(ImGui-SFML)
 set(IMGUI_DIR ${imgui_SOURCE_DIR})
 
@@ -45,5 +62,5 @@ find_package(OpenGL REQUIRED)
 
 SET( m "main" )
 add_executable( ${m} src/${m}.cc ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp )
-target_link_libraries( ${m} PRIVATE SFML::Window ImGui-SFML::ImGui-SFML OpenGL::GL common)
+target_link_libraries( ${m} PRIVATE SFML::Window glm::glm-header-only ImGui-SFML::ImGui-SFML OpenGL::GL common)
 target_include_directories( ${m} PRIVATE ${imgui_SOURCE_DIR}  ${imgui_SOURCE_DIR}/backends )
