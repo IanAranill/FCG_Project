@@ -19,6 +19,10 @@ L'obiettivo di questa prima fase è stato predisporre un ambiente di sviluppo so
 
 ![Finestra iniziale](resources/screenshots/stage01.png)
 
+
+#### Stage 02: Modularizzazione e Telecamera FPS
+In questa fase il monolite iniziale è stato scomposto in moduli indipendenti e scalabili (Camera, Scene, Lights, Materials e Shaders). È stata progettata e integrata una telecamera in prima persona (FPS) fluida, basata sul delta time, esplorabile tramite tastiera (WASD) e rotazione drag-and-drop del mouse, garantendo così una perfetta compatibilità e reattività anche su ambiente macOS. Il main è ora un "direttore d'orchestra" pulito, pronto ad ospitare e renderizzare le geometrie.
+
 ---
 
 ### 3. Problemi Riscontrati e Soluzioni Tecniche
