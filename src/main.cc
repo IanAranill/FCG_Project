@@ -1,11 +1,23 @@
 #define GLAD_GL_IMPLEMENTATION
 #include <SFML/Window.hpp>
+#include <SFML/System/Clock.hpp> // Aggiunto per il Delta Time!
 #include <cstdlib>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
 
+#ifndef GLAD_GL
+#define GLAD_GL
 #include "glad/gl.h"
+#endif
+
+// Modules
+#include "include/camera.hh"
+#include "include/light.hh"
+#include "include/materials.hh"
+#include "include/hotshaders.hh"
+#include "include/scene.hh" 
+
 
 /////////////////////////////
 // Window and OpenGL setup //
@@ -20,7 +32,7 @@ class Setup {
     Setup() {
         sf::ContextSettings settings;
         settings.depthBits = 32;
-        settings.stencilBits = 8;  // FONDAMENTALE per lo specchio futuro!
+        settings.stencilBits = 8;
         settings.antiAliasingLevel = 4;
         settings.attributeFlags = sf::ContextSettings::Attribute::Core;
         settings.majorVersion = 4;
@@ -64,18 +76,31 @@ class Setup {
 // SFML Callbacks //
 ////////////////////
 
-void handle_events(sf::Window& window, bool& running) {
-    while (const std::optional event = window.pollEvent()) {
-        if (event->is<sf::Event::Closed>()) {
-            running = false;
-        } else if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
-            if (key_pressed->scancode == sf::Keyboard::Scancode::Escape) {
-                running = false;
-            }
-            // TODO: Aggiungere gestione tasti WASD per la telecamera FPS
-        } else if (const auto* mouse = event->getIf<sf::Event::MouseMoved>()) {
-            // TODO: Aggiungere gestione movimento mouse per la rotazione della visuale
-        }
+void handle_keyboard(const sf::Event::KeyPressed& key, bool& running) {
+    if (key.scancode == sf::Keyboard::Scancode::Escape) {
+        running = false;
+    }
+}
+
+void handle_mouse(const sf::Event::MouseMoved& mouse, Camera& camera) {
+    static float prev_x = 0.0f;
+    static float prev_y = 0.0f;
+    static bool first_mouse = true; 
+
+    if (first_mouse) {
+        prev_x = static_cast<float>(mouse.position.x);
+        prev_y = static_cast<float>(mouse.position.y);
+        first_mouse = false;
+    }
+
+    float x_offset = static_cast<float>(mouse.position.x) - prev_x;
+    float y_offset = static_cast<float>(mouse.position.y) - prev_y;
+
+    prev_x = static_cast<float>(mouse.position.x);
+    prev_y = static_cast<float>(mouse.position.y);
+
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+        camera.process_mouse_drag(x_offset, y_offset);
     }
 }
 
@@ -87,7 +112,11 @@ int main(int argc, char* argv[]) {
     Setup setup;
     sf::Window& window = *setup.window;
 
-    // TODO: Inizializzare Camera FPS
+    // Inizializzazione Camera FPS
+    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+
+    Shaders shaders("vertex.vert", "fragment.frag");
+    shaders.use ();
     // TODO: Inizializzare Stanza e Oggetto 3D
 
     glEnable(GL_CULL_FACE);
@@ -95,18 +124,42 @@ int main(int argc, char* argv[]) {
 
     glEnable(GL_DEPTH_TEST);
 
-    //// 3. Main Loop ////
+    // Main Loop //
+    sf::Clock delta_clock;
     bool running = true;
+    
     while (running) {
-        // A. Gestione Input
-        handle_events(window, running);
+        float dt = delta_clock.restart().asSeconds();
+
+        // Gestione Input
+        while (const std::optional event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
+                running = false;
+            } else if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
+                handle_keyboard(*key_pressed, running);
+            } else if (const auto* mouse_moved = event->getIf<sf::Event::MouseMoved>()) {
+                handle_mouse(*mouse_moved, camera);
+            }
+        }
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) camera.process_keyboard(CameraMovement::FORWARD, dt);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) camera.process_keyboard(CameraMovement::BACKWARD, dt);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) camera.process_keyboard(CameraMovement::LEFT, dt);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) camera.process_keyboard(CameraMovement::RIGHT, dt);
 
         // TODO: Aggiornare la logica della scena (es. far ruotare l'oggetto)
 
-        // B. Rendering
+        // Calcolo Matrici
+        float aspect_ratio = static_cast<float>(window.getSize().x) / static_cast<float>(window.getSize().y);
+        glm::mat4 view = camera.get_view_matrix();
+        glm::mat4 proj = camera.get_projection_matrix(aspect_ratio);
+        glm::mat4 vp = proj * view;
+
+        // Rendering
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+        // TODO: glUniformMatrix4fv(glGetUniformLocation(shader_program, "vp"), 1, GL_FALSE, &vp[0][0]);
         // TODO: Disegnare la Stanza
         // TODO: Disegnare la logica dello Specchio
         // TODO: Disegnare l'oggetto 3D

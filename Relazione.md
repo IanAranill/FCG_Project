@@ -17,7 +17,7 @@ L'obiettivo di questa prima fase è stato predisporre un ambiente di sviluppo so
 * **Cosa aggiunge:** È stato configurato un template di base che predispone l'infrastruttura del progetto. Al momento viene visualizzata esclusivamente una finestra con uno **sfondo grigio neutrale**, senza alcuna geometria (nessun pavimento) o pannello GUI renderizzato. L'obiettivo è confermare la corretta compilazione e l'inizializzazione del contesto OpenGL.
 
 
->screenshot
+![Finestra iniziale](resources/screenshots/stage01.png)
 
 ---
 
