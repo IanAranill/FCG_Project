@@ -76,6 +76,7 @@ Dopo aver completato la compilazione multi-tappa, gli eseguibili indipendenti pe
 cd FCG_Stages/Stage_01
 ./build/main
 ```
+Gli stages seguenti si avviano nello stesso modo, nelle relative cartelle
 
 ## Comandi e Interfaccia Utente
 
@@ -86,3 +87,13 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 #### Controlli Tastiera Stage 01
 
 * **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
+
+#### Controlli Tastiera Stage 02
+
+* **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
+* Comandi **`WASD`** per il movimento nelle quattro direzioni, non essendoci mesh da vedere il movimento non è verificabile a occhio nudo.
+
+#### Controlli Tastiera Stage 03
+
+* **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
+* Comandi **`WASD`** per il movimento nelle quattro direzioni, la telecamera può muoversi verso l'alto staccandosi dal suolo.
