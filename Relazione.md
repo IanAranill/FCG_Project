@@ -33,11 +33,17 @@ In questa fase l'infrastruttura è stata estesa per supportare il caricamento di
 
 ![Problema di posizionamento - Coniglio compenetrato nel muro](resources/screenshots/stage03_bunny.png)
 
----
+#### Stage 04: Normalizzazione Spaziale e Bounding Box
+In questa fase, l'obiettivo principale è stato risolvere le pesanti discrepanze di scala e posizionamento dei modelli 3D importati, come evidenziato nello stage precedente.
 
-### Problemi Riscontrati e Soluzioni Tecniche
+* **Algoritmo di Normalizzazione:** È stato implementato un sistema automatico di *Bounding Box Normalization* direttamente all'interno della classe costruttrice `Mesh`. Durante il parsing, il sistema scandisce i vertici per trovare le coordinate minime e massime ("scatola di ingombro"), calcolandone il baricentro e il lato di massima estensione. Tutti i vertici vengono quindi sottratti al centro e divisi per l'estensione massima: il risultato è un modello perfettamente centrato nell'origine spaziale `(0,0,0)` e ridotto a una dimensione unitaria (es. 1x1x1), senza subire deformazioni proporzionali.
+* **Ottimizzazione Architetturale (Pre-calcolo):** Con i modelli finalmente standardizzati, le trasformazioni geometriche spaziali (`glm::scale` e `glm::translate`) hanno acquisito un comportamento matematico prevedibile. Per massimizzare le performance del motore grafico, le Matrici di Modello (`model_matrix`) vengono ora pre-calcolate una singola volta all'esterno del *main loop*. Questa scelta evita alla CPU di rieseguire inutilmente complesse moltiplicazioni matriciali ad ogni frame per oggetti statici.
 
+![Corretta dimensione degli oggetti](resources/screenshots/stage04.png)
 
+* **Stato Attuale e Bug Noti:** Gli oggetti sono ora in perfetta scala spaziale (con la stanza ingrandita a 30 unità e l'oggetto di test coerentemente poggiato al centro del pavimento). Il problema della compenetrazione è risolto, tuttavia persiste una problematica sul calcolo dell'illuminazione (probabilmente legata alla mancata normalizzazione dei vettori luce post-scalatura) che è stata isolata e schedulata per le successive sessioni di debug.
+
+![Problema di illuminazione - parete con bug di luminosità](resources/screenshots/stage04_light_error.png)
 
 ---
 
