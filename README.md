@@ -102,6 +102,11 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 * **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
 * Comandi **`WASD`** per il movimento nelle quattro direzioni, la telecamera può muoversi verso l'alto staccandosi dal suolo.
 
-#### Controlli Mouse Stage 02
+#### Controlli Mouse Stage 03
 
 * Tenendo premuto il tasto sinistro del mouse e muovendolo si controlla la rotazione della telecamera.
+
+#### Controlli Stage 04
+
+* I controlli rimangono invariati
+
