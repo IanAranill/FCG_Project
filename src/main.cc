@@ -1,23 +1,24 @@
 #define GLAD_GL_IMPLEMENTATION
+#include <SFML/System/Clock.hpp>
 #include <SFML/Window.hpp>
-#include <SFML/System/Clock.hpp> // Aggiunto per il Delta Time!
 #include <cstdlib>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
+#include <memory>
 
 #ifndef GLAD_GL
 #define GLAD_GL
 #include "glad/gl.h"
 #endif
 
-// Modules
+// --- Moduli ---
 #include "include/camera.hh"
-#include "include/light.hh"
-#include "include/materials.hh"
 #include "include/hotshaders.hh"
-#include "include/scene.hh" 
-
+#include "include/lighting.hh"
+#include "include/mesh.hh"
+#include "include/scene.hh"
 
 /////////////////////////////
 // Window and OpenGL setup //
@@ -52,40 +53,31 @@ class Setup {
             std::cerr << "Failure: error during SFML OpenGL Activation." << std::endl;
             exit(1);
         }
-        sf::ContextSettings gotten = window->getSettings();
-
-        std::cout << "depth bits: " << gotten.depthBits << std::endl;
-        std::cout << "stencil bits: " << gotten.stencilBits << std::endl;
-        std::cout << "antialiasing level: " << gotten.antiAliasingLevel << std::endl;
-        std::cout << "SFML GL version: " << gotten.majorVersion << "." << gotten.minorVersion
-                  << std::endl;
 
         int version = gladLoadGL(sf::Context::getFunction);
         if (!version) {
             std::cerr << "Failure: error during glad loading." << std::endl;
             exit(1);
         }
-        std::cout << "GLAD GL version: " << GLAD_VERSION_MAJOR(version) << "."
-                  << GLAD_VERSION_MINOR(version) << std::endl;
     }
 
     ~Setup() { delete window; }
 };
 
-////////////////////
-// SFML Callbacks //
-////////////////////
+//////////////////////////
+// Gestione Input       //
+//////////////////////////
 
-void handle_keyboard(const sf::Event::KeyPressed& key, bool& running) {
+void handle(const sf::Event::KeyPressed& key, bool& running) {
     if (key.scancode == sf::Keyboard::Scancode::Escape) {
         running = false;
     }
 }
 
-void handle_mouse(const sf::Event::MouseMoved& mouse, Camera& camera) {
+void handle(const sf::Event::MouseMoved& mouse, Camera& camera) {
     static float prev_x = 0.0f;
     static float prev_y = 0.0f;
-    static bool first_mouse = true; 
+    static bool first_mouse = true;
 
     if (first_mouse) {
         prev_x = static_cast<float>(mouse.position.x);
@@ -104,6 +96,58 @@ void handle_mouse(const sf::Event::MouseMoved& mouse, Camera& camera) {
     }
 }
 
+void handle_events(sf::Window& window, bool& running, Camera& camera, float dt) {
+    while (const std::optional event = window.pollEvent()) {
+        if (event->is<sf::Event::Closed>()) {
+            running = false;
+        } else if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
+            handle(*key_pressed, running);
+        } else if (const auto* mouse_moved = event->getIf<sf::Event::MouseMoved>()) {
+            handle(*mouse_moved, camera);
+        }
+    }
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+        camera.process_keyboard(CameraMovement::FORWARD, dt);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
+        camera.process_keyboard(CameraMovement::BACKWARD, dt);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+        camera.process_keyboard(CameraMovement::LEFT, dt);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
+        camera.process_keyboard(CameraMovement::RIGHT, dt);
+}
+
+/////////////////////////////////
+// Helper di Scena e Shading   //
+/////////////////////////////////
+
+std::unique_ptr<Scene> load_scene(const std::string& filepath) {
+    std::cout << "Caricamento " << filepath << "..." << std::endl;
+    Mesh data(filepath);
+    return std::make_unique<Scene>(data.vertices, data.indices);
+}
+
+// Utilizziamo la nuova classe Lighting
+void prepare_shader_and_camera(const Shaders& shaders, const Camera& camera,
+                               const Lighting& lighting, float aspect_ratio) {
+    shaders.use();
+    glm::mat4 view = camera.get_view_matrix();
+    glm::mat4 proj = camera.get_projection_matrix(aspect_ratio);
+    glm::mat4 vp = proj * view;
+
+    glUniformMatrix4fv(glGetUniformLocation(shaders.program, "vp"), 1, GL_FALSE, &vp[0][0]);
+    glUniform3fv(glGetUniformLocation(shaders.program, "cam_pos"), 1, &camera.position[0]);
+
+    lighting.push_to_shader(shaders.program);
+}
+
+void draw_object(const std::unique_ptr<Scene>& scene, GLuint shader_program,
+                 const glm::mat4& model_matrix) {
+    GLint model_loc = glGetUniformLocation(shader_program, "model");
+    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &model_matrix[0][0]);
+    scene->draw();
+}
+
 //////////
 // Main //
 //////////
@@ -112,58 +156,58 @@ int main(int argc, char* argv[]) {
     Setup setup;
     sf::Window& window = *setup.window;
 
-    // Inizializzazione Camera FPS
-    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    // --- Inizializzazione Logica ---
+    Camera camera(glm::vec3(0.0f, 1.5f, 5.0f));
+    Shaders shaders("resources/shaders/vertex.vert", "resources/shaders/fragment.frag");
 
-    Shaders shaders("vertex.vert", "fragment.frag");
-    shaders.use ();
-    // TODO: Inizializzare Stanza e Oggetto 3D
+    // Nuova classe unificata
+    Lighting scene_lighting;
 
+    // --- Caricamento Geometrie ---
+    auto corner = load_scene("resources/meshes/corner.off");
+    auto bunny = load_scene("resources/meshes/bunny.off");
+    // TODO: Inizializzazione Specchio
+
+    // --- Setup OpenGL ---
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-
     glEnable(GL_DEPTH_TEST);
 
-    // Main Loop //
+    // --- Main Loop ---
     sf::Clock delta_clock;
     bool running = true;
-    
+
     while (running) {
         float dt = delta_clock.restart().asSeconds();
 
-        // Gestione Input
-        while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) {
-                running = false;
-            } else if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
-                handle_keyboard(*key_pressed, running);
-            } else if (const auto* mouse_moved = event->getIf<sf::Event::MouseMoved>()) {
-                handle_mouse(*mouse_moved, camera);
-            }
-        }
+        // --- Gestione Input ---
+        handle_events(window, running, camera, dt);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) camera.process_keyboard(CameraMovement::FORWARD, dt);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) camera.process_keyboard(CameraMovement::BACKWARD, dt);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) camera.process_keyboard(CameraMovement::LEFT, dt);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) camera.process_keyboard(CameraMovement::RIGHT, dt);
+        // TODO: Aggiornamento Logica Scena
 
-        // TODO: Aggiornare la logica della scena (es. far ruotare l'oggetto)
-
-        // Calcolo Matrici
-        float aspect_ratio = static_cast<float>(window.getSize().x) / static_cast<float>(window.getSize().y);
-        glm::mat4 view = camera.get_view_matrix();
-        glm::mat4 proj = camera.get_projection_matrix(aspect_ratio);
-        glm::mat4 vp = proj * view;
-
-        // Rendering
+        // --- Clear Buffer ---
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        // TODO: glUniformMatrix4fv(glGetUniformLocation(shader_program, "vp"), 1, GL_FALSE, &vp[0][0]);
-        // TODO: Disegnare la Stanza
-        // TODO: Disegnare la logica dello Specchio
-        // TODO: Disegnare l'oggetto 3D
+        // --- Setup Shaders ---
+        float aspect_ratio =
+            static_cast<float>(window.getSize().x) / static_cast<float>(window.getSize().y);
+        prepare_shader_and_camera(shaders, camera, scene_lighting, aspect_ratio);
 
+        // --- Rendering ---
+
+        glm::mat4 model_corner = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
+        draw_object(corner, shaders.program, model_corner);
+
+        // TODO: Maschera Specchio (Stencil Buffer)
+        // TODO: Rendering Oggetti Riflessi
+        // TODO: Rendering Vetro Specchio
+
+        glm::mat4 model_bunny = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, -2.0f));
+        model_bunny = glm::scale(model_bunny, glm::vec3(15.0f));
+        draw_object(bunny, shaders.program, model_bunny);
+
+        // --- Swap Buffer ---
         window.display();
     }
 
