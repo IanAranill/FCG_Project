@@ -20,7 +20,7 @@ class Lighting {
 
     Lighting() {
         // Valori iniziali Luce
-        light_position = glm::vec3(0.0f, 5.0f, 0.0f);
+        light_position = glm::vec3(0.0f, 1000.0f, 0.0f);
         light_color = glm::vec3(1.0f, 1.0f, 1.0f);
         light_ambient = glm::vec3(0.2f, 0.2f, 0.2f);
 
@@ -32,7 +32,6 @@ class Lighting {
     }
 
     // Invia i dati di Luce e Materiale allo shader
-    // (I nomi tra virgolette corrispondono alle variabili uniform nel fragment.frag)
     void push_to_shader(GLuint program) const {
         glUniform3fv(glGetUniformLocation(program, "light.direct_pos"), 1, &light_position[0]);
         glUniform3fv(glGetUniformLocation(program, "light.direct_val"), 1, &light_color[0]);

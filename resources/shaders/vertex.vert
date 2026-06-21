@@ -10,11 +10,10 @@ out vec3 post_vertex_position;
 out vec3 post_vertex_norm;
 
 void main() {
-    gl_Position = vp * vec4(pos, 1.f);
+    vec4 worldPos = (vp) * vec4(pos, 1.f);
 
-    vec4 worldPos = model * vec4(pos, 1.f);
+    gl_Position = worldPos;
     
-
     post_vertex_position = vec3(worldPos);
-    post_vertex_norm = mat3(transpose(inverse(model))) * norm;
+    post_vertex_norm = mat3(model) * norm;
 }
