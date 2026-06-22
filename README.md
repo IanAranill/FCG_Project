@@ -110,3 +110,7 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 
 * I controlli rimangono invariati
 
+#### Controlli Stage 05
+
+* I controlli rimangono invariati
+
