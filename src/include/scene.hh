@@ -1,4 +1,7 @@
 #pragma once
+
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
 #ifndef GLAD_GL
@@ -6,56 +9,45 @@
 #include "../glad/gl.h"
 #endif
 
+#include "mesh.hh"
+
 class Scene {
    private:
-    GLuint vbo;
-    GLuint ebo;
-    GLuint vao;
-    std::size_t index_count;
+    std::vector<Mesh*> meshes;
 
    public:
-    Scene(const std::vector<float>& vertices, const std::vector<unsigned int>& indices) {
-        index_count = indices.size();
-        setup_mesh(vertices, indices);
+    Scene() = default;
+
+    // --- Gestione della Scena ---
+
+    void add_mesh(Mesh* mesh) {
+        if (mesh) {
+            meshes.push_back(mesh);
+        }
     }
 
-    ~Scene() {
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vbo);
-        glDeleteBuffers(1, &ebo);
-    }
+    void clear() { meshes.clear(); }
 
-    void draw() const {
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-    }
+    // --- Rendering ---
 
-   private:
-    void setup_mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices) {
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
+    void draw(GLuint shader_program) const {
+        // Recuperiamo le location delle variabili uniform dallo shader
+        GLint model_loc = glGetUniformLocation(shader_program, "model");
+        GLint normal_mat_loc = glGetUniformLocation(shader_program, "normal_matrix");
 
-        glBindVertexArray(vao);
+        // Cicliamo attraverso tutte le mesh registrate nella scena
+        for (const Mesh* mesh : meshes) {
+            if (mesh) {
+                // Generazione e Push della Model Matrix e della Normal Matrix per ogni singolo
+                // oggetto
+                glm::mat4 model_matrix = mesh->get_model_matrix();
+                glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(),
-                     GL_STATIC_DRAW);
+                glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model_matrix));
+                glUniformMatrix3fv(normal_mat_loc, 1, GL_FALSE, glm::value_ptr(normal_matrix));
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(),
-                     GL_STATIC_DRAW);
-
-        // Attributo 0: Posizione (x, y, z)
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-
-        // Attributo 1: Normale (nx, ny, nz)
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                              (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0);
+                mesh->draw();
+            }
+        }
     }
 };

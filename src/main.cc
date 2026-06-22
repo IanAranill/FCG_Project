@@ -1,29 +1,27 @@
 #define GLAD_GL_IMPLEMENTATION
+
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window.hpp>
+#include <SFML/Window/Context.hpp>
+#include <SFML/Window/Event.hpp>
 #include <cstdlib>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/trigonometric.hpp>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <memory>
+#include <optional>
 
 #ifndef GLAD_GL
 #define GLAD_GL
 #include "glad/gl.h"
 #endif
 
-// --- Moduli ---
 #include "include/camera.hh"
 #include "include/hotshaders.hh"
 #include "include/lighting.hh"
 #include "include/mesh.hh"
 #include "include/scene.hh"
 
-/////////////////////////////
-// Window and OpenGL setup //
-/////////////////////////////
-
+// --- Setup Contesto Finestra ---
 class Setup {
    public:
     sf::Window* window;
@@ -39,188 +37,125 @@ class Setup {
         settings.majorVersion = 4;
         settings.minorVersion = 1;
 
-        window = new sf::Window(sf::VideoMode(sf::Vector2u(window_width, window_height)),
-                                "Progetto FCG - Specchio FPS", sf::Style::Default,
-                                sf::State::Windowed, settings);
+        window =
+            new sf::Window(sf::VideoMode(sf::Vector2u(window_width, window_height)),
+                           "Progetto FCG - Stage 05 Refactoring", sf::State::Windowed, settings);
 
         sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
         window->setPosition(sf::Vector2i((desktop.size.x - window_width) / 2,
                                          (desktop.size.y - window_height) / 2));
 
-        window->setVerticalSyncEnabled(true);
-
         if (!window->setActive(true)) {
-            std::cerr << "Failure: error during SFML OpenGL Activation." << std::endl;
-            exit(1);
+            std::cerr
+                << ">>> [ERRORE CRITICO] Impossibile attivare il contesto OpenGL sulla finestra!\n";
+            std::exit(EXIT_FAILURE);
         }
 
-        int version = gladLoadGL(sf::Context::getFunction);
-        if (!version) {
-            std::cerr << "Failure: error during glad loading." << std::endl;
-            exit(1);
-        }
+        window->setFramerateLimit(60);
+        window->setMouseCursorGrabbed(false);
+        window->setMouseCursorVisible(true);
     }
 
     ~Setup() { delete window; }
 };
 
-//////////////////////////
-// Gestione Input       //
-//////////////////////////
-
-void handle(const sf::Event::KeyPressed& key, bool& running) {
-    if (key.scancode == sf::Keyboard::Scancode::Escape) {
-        running = false;
-    }
-}
-
-void handle(const sf::Event::MouseMoved& mouse, Camera& camera) {
-    static float prev_x = 0.0f;
-    static float prev_y = 0.0f;
-    static bool first_mouse = true;
-
-    if (first_mouse) {
-        prev_x = static_cast<float>(mouse.position.x);
-        prev_y = static_cast<float>(mouse.position.y);
-        first_mouse = false;
-    }
-
-    float x_offset = static_cast<float>(mouse.position.x) - prev_x;
-    float y_offset = static_cast<float>(mouse.position.y) - prev_y;
-
-    prev_x = static_cast<float>(mouse.position.x);
-    prev_y = static_cast<float>(mouse.position.y);
-
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-        camera.process_mouse_drag(x_offset, y_offset);
-    }
-}
-
+// --- Polling Eventi OS ---
 void handle_events(sf::Window& window, bool& running, Camera& camera, float dt) {
-    while (const std::optional event = window.pollEvent()) {
+    static bool is_dragging = false;
+    static sf::Vector2i last_pos;
+
+    while (const std::optional<sf::Event> event = window.pollEvent()) {
         if (event->is<sf::Event::Closed>()) {
             running = false;
-        } else if (const auto* key_pressed = event->getIf<sf::Event::KeyPressed>()) {
-            handle(*key_pressed, running);
-        } else if (const auto* mouse_moved = event->getIf<sf::Event::MouseMoved>()) {
-            handle(*mouse_moved, camera);
+        } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+            if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
+                running = false;
+            }
+        } else if (const auto* mbPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+            if (mbPressed->button == sf::Mouse::Button::Left) {
+                is_dragging = true;
+                last_pos = sf::Vector2i(mbPressed->position.x, mbPressed->position.y);
+            }
+        } else if (const auto* mbReleased = event->getIf<sf::Event::MouseButtonReleased>()) {
+            if (mbReleased->button == sf::Mouse::Button::Left) {
+                is_dragging = false;
+            }
+        } else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
+            if (is_dragging) {
+                sf::Vector2i current_pos(mouseMoved->position.x, mouseMoved->position.y);
+                sf::Vector2i delta = current_pos - last_pos;
+
+                camera.process_mouse_drag(static_cast<float>(delta.x), static_cast<float>(delta.y));
+                last_pos = current_pos;
+            }
         }
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
-        camera.process_keyboard(CameraMovement::FORWARD, dt);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))
-        camera.process_keyboard(CameraMovement::BACKWARD, dt);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
-        camera.process_keyboard(CameraMovement::LEFT, dt);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D))
-        camera.process_keyboard(CameraMovement::RIGHT, dt);
+    if (window.hasFocus()) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::W))
+            camera.process_keyboard(CameraMovement::FORWARD, dt);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::S))
+            camera.process_keyboard(CameraMovement::BACKWARD, dt);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::A))
+            camera.process_keyboard(CameraMovement::LEFT, dt);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::D))
+            camera.process_keyboard(CameraMovement::RIGHT, dt);
+    }
 }
 
-/////////////////////////////////
-// Helper di Scena e Shading   //
-/////////////////////////////////
-
-std::unique_ptr<Scene> load_scene(const std::string& filepath, bool smooth_normals = true) {
-    std::cout << "Caricamento " << filepath << "..." << std::endl;
-
-    Mesh data(filepath, smooth_normals);
-    return std::make_unique<Scene>(data.vertices, data.indices);
-}
-
-glm::mat4 prepare_shader_and_camera(const Shaders& shaders, const Camera& camera,
-                                    const Lighting& lighting, float aspect_ratio) {
-    shaders.use();
-    glm::mat4 view = camera.get_view_matrix();
-    glm::mat4 proj = camera.get_projection_matrix(aspect_ratio);
-    glm::mat4 vp = proj * view;
-
-    // glUniformMatrix4fv(glGetUniformLocation(shaders.program, "vp"), 1, GL_FALSE, &vp[0][0]);
-    glUniform3fv(glGetUniformLocation(shaders.program, "cam_pos"), 1, &camera.position[0]);
-
-    lighting.push_to_shader(shaders.program);
-    return vp;
-}
-
-void draw_object(const std::unique_ptr<Scene>& scene, GLuint shader_program,
-                 const glm::mat4& model_matrix) {
-    GLint model_loc = glGetUniformLocation(shader_program, "model");
-
-    glUniformMatrix4fv(model_loc, 1, GL_FALSE, &model_matrix[0][0]);
-    scene->draw();
-}
-
-//////////
-// Main //
-//////////
-
-int main(int argc, char* argv[]) {
+int main() {
     Setup setup;
     sf::Window& window = *setup.window;
 
-    // --- Inizializzazione Logica ---
-    Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    if (!gladLoadGL(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction))) {
+        std::cerr << "Errore nell'inizializzazione di GLAD\n";
+        return -1;
+    }
+
+    // --- Inizializzazione Sottosistemi ---
     Shaders shaders("resources/shaders/vertex.vert", "resources/shaders/fragment.frag");
-
+    Camera camera(glm::vec3(0.0f, 1.0f, 5.0f));
     Lighting scene_lighting;
-    // Spostiamo la luce più in alto per compensare la nuova altezza della stanza
-    scene_lighting.light_position = glm::vec3(0.0f, 6.0f, 0.0f);
 
-    // --- Caricamento Geometrie ---
-    auto corner = load_scene("resources/meshes/corner.off", false);
-    auto bunny = load_scene("resources/meshes/bunny.off", true);
-    // TODO: Inizializzazione Specchio
+    // --- Allocazione Geometrie ---
+    Mesh corner("resources/meshes/corner.off", false);
+    corner.position = glm::vec3(0.0f, -1.0f, 0.0f);
+    corner.scale = glm::vec3(25.0f);
 
-    // --- PRE-CALCOLO MATRICI (Ottimizzazione: calcolate una sola volta!) ---
+    Mesh bunny("resources/meshes/bunny.off", true);
+    bunny.position = glm::vec3(0.0f, 0.0f, 0.0f);
+    bunny.scale = glm::vec3(1.5f);
 
-    // Stanza: Aumentiamo la scala a 150.0f così da essere sicuri sia giusta e non una "scatoletta"
-    glm::mat4 model_corner = glm::scale(glm::mat4(1.0f), glm::vec3(30.0f));
+    Scene scene;
+    scene.add_mesh(&corner);
+    scene.add_mesh(&bunny);
 
-    // Coniglio: Mantenuto esattamente a (0,0,0) per farlo fluttuare al centro, e scalato a 1.5
-    glm::mat4 model_bunny = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    model_bunny = glm::scale(model_bunny, glm::vec3(1.5f));
-
-    glm::mat4 model_c = transpose(inverse(model_corner));
-    glm::mat4 model_b = transpose(inverse(model_bunny));
-
-    // --- Setup OpenGL ---
+    // --- Configurazione Stato OpenGL ---
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glEnable(GL_DEPTH_TEST);
 
-    // --- Main Loop ---
     sf::Clock delta_clock;
     bool running = true;
 
+    // --- Main Rendering Loop ---
     while (running) {
         float dt = delta_clock.restart().asSeconds();
+        if (dt > 0.1f) dt = 0.1f;
 
-        // --- Gestione Input ---
         handle_events(window, running, camera, dt);
 
-        // --- Clear Buffer ---
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        // --- Setup Shaders ---
         float aspect_ratio =
             static_cast<float>(window.getSize().x) / static_cast<float>(window.getSize().y);
-        glm::mat4 vp = prepare_shader_and_camera(shaders, camera, scene_lighting, aspect_ratio);
 
-        // --- Rendering Oggetti (Usiamo le matrici statiche pre-calcolate) ---
-        glm::mat4 vpForCorner = vp * model_corner;
-        glUniformMatrix4fv(glGetUniformLocation(shaders.program, "vp"), 1, GL_FALSE,
-                           &vpForCorner[0][0]);
-        draw_object(corner, shaders.program, model_c);
+        shaders.use();
+        camera.push_to_shader(shaders.program, aspect_ratio);
+        scene_lighting.push_to_shader(shaders.program);
 
-        // TODO: Maschera Specchio (Stencil Buffer)
-        // TODO: Rendering Oggetti Riflessi
-        // TODO: Rendering Vetro Specchio
-
-        glm::mat4 vpForBunny = vp * model_bunny;
-        glUniformMatrix4fv(glGetUniformLocation(shaders.program, "vp"), 1, GL_FALSE,
-                           &vpForBunny[0][0]);
-        draw_object(bunny, shaders.program, model_b);
+        scene.draw(shaders.program);
 
         window.display();
     }

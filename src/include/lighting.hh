@@ -1,5 +1,10 @@
 #pragma once
+
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <string>
+#include <unordered_map>
+
 #ifndef GLAD_GL
 #define GLAD_GL
 #include "../glad/gl.h"
@@ -7,39 +12,31 @@
 
 class Lighting {
    public:
-    // --- Proprietà Esplicite della Luce ---
-    glm::vec3 light_position;
-    glm::vec3 light_color;
-    glm::vec3 light_ambient;
-
-    // --- Proprietà Esplicite del Materiale ---
-    glm::vec3 material_diffuse;
-    glm::vec3 material_specular;
-    glm::vec3 material_ambient;
-    float material_shininess;
+    // --- Mappe per le proprietà Uniform ---
+    std::unordered_map<std::string, glm::vec3> vec3_uniforms;
+    std::unordered_map<std::string, float> float_uniforms;
 
     Lighting() {
         // Valori iniziali Luce
-        light_position = glm::vec3(0.0f, 10.0f, 0.0f);
-        light_color = glm::vec3(1.0f, 1.0f, 1.0f);
-        light_ambient = glm::vec3(0.2f, 0.2f, 0.2f);
+        vec3_uniforms["light.direct_pos"] = glm::vec3(0.0f, 1.5f, 0.0f);
+        vec3_uniforms["light.direct_val"] = glm::vec3(1.0f, 1.0f, 1.0f);
+        vec3_uniforms["light.ambient"] = glm::vec3(0.2f, 0.2f, 0.2f);
 
         // Valori iniziali Materiale
-        material_diffuse = glm::vec3(0.1f, 0.7f, 0.8f);
-        material_specular = glm::vec3(0.5f, 0.5f, 0.5f);
-        material_ambient = glm::vec3(0.1f, 0.7f, 0.8f);
-        material_shininess = 64.0f;
+        vec3_uniforms["material.diffuse"] = glm::vec3(0.1f, 0.7f, 0.8f);
+        vec3_uniforms["material.specular"] = glm::vec3(0.5f, 0.5f, 0.5f);
+        vec3_uniforms["material.ambient"] = glm::vec3(0.1f, 0.7f, 0.8f);
+
+        float_uniforms["material.shininess"] = 64.0f;
     }
 
-    // Invia i dati di Luce e Materiale allo shader
     void push_to_shader(GLuint program) const {
-        glUniform3fv(glGetUniformLocation(program, "light.direct_pos"), 1, &light_position[0]);
-        glUniform3fv(glGetUniformLocation(program, "light.direct_val"), 1, &light_color[0]);
-        glUniform3fv(glGetUniformLocation(program, "light.ambient_val"), 1, &light_ambient[0]);
+        for (const auto& [name, value] : vec3_uniforms) {
+            glUniform3fv(glGetUniformLocation(program, name.c_str()), 1, glm::value_ptr(value));
+        }
 
-        glUniform3fv(glGetUniformLocation(program, "material.diffuse"), 1, &material_diffuse[0]);
-        glUniform3fv(glGetUniformLocation(program, "material.specular"), 1, &material_specular[0]);
-        glUniform3fv(glGetUniformLocation(program, "material.ambient"), 1, &material_ambient[0]);
-        glUniform1f(glGetUniformLocation(program, "material.shininess"), material_shininess);
+        for (const auto& [name, value] : float_uniforms) {
+            glUniform1f(glGetUniformLocation(program, name.c_str()), value);
+        }
     }
 };

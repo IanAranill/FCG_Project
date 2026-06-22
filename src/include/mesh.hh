@@ -1,39 +1,118 @@
 #pragma once
+
 #include <algorithm>
+#include <cstddef>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#ifndef GLAD_GL
+#define GLAD_GL
+#include "../glad/gl.h"
+#endif
+
+// --- Definizione Vertice ---
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+};
+
 class Mesh {
    public:
-    std::vector<float> vertices;
+    std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
-    // --- Variabili di Trasformazione (Aggiunte per compatibilità col Main) ---
-    unsigned int VAO, VBO, EBO;
+    // --- Risorse OpenGL ---
+    GLuint VAO{0}, VBO{0}, EBO{0};
+
+    // --- Trasformazioni Affini ---
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale = glm::vec3(1.0f);
-    glm::mat4 model_matrix = glm::mat4(1.0f);
 
-    // --- Costruttore ---
+    // --- Ciclo di Vita e Memory Management ---
+    Mesh() = default;
+
     Mesh(const std::string& filename, bool smooth_normals = true) {
         if (!load_off(filename)) {
-            std::cerr << "Errore critico durante il caricamento della mesh.\n";
-            exit(1);
+            std::cerr << ">>> [ERRORE CRITICO MESH] Impossibile caricare: " << filename << "\n";
+            return;
         }
 
         normalize_mesh();
+
         if (smooth_normals) {
             compute_smooth_normals();
         } else {
             compute_flat_normals();
         }
-        pack_for_gpu();
+
+        build_vertices();
+        setup_gl_resources();
+    }
+
+    ~Mesh() {
+        if (VAO) glDeleteVertexArrays(1, &VAO);
+        if (VBO) glDeleteBuffers(1, &VBO);
+        if (EBO) glDeleteBuffers(1, &EBO);
+    }
+
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+
+    Mesh(Mesh&& other) noexcept
+        : vertices(std::move(other.vertices)),
+          indices(std::move(other.indices)),
+          VAO(other.VAO),
+          VBO(other.VBO),
+          EBO(other.EBO),
+          position(other.position),
+          rotation(other.rotation),
+          scale(other.scale) {
+        other.VAO = other.VBO = other.EBO = 0;
+    }
+
+    Mesh& operator=(Mesh&& other) noexcept {
+        if (this != &other) {
+            if (VAO) glDeleteVertexArrays(1, &VAO);
+            if (VBO) glDeleteBuffers(1, &VBO);
+            if (EBO) glDeleteBuffers(1, &EBO);
+
+            vertices = std::move(other.vertices);
+            indices = std::move(other.indices);
+            VAO = other.VAO;
+            VBO = other.VBO;
+            EBO = other.EBO;
+            position = other.position;
+            rotation = other.rotation;
+            scale = other.scale;
+
+            other.VAO = other.VBO = other.EBO = 0;
+        }
+        return *this;
+    }
+
+    // --- Interfaccia Rendering ---
+    [[nodiscard]] glm::mat4 get_model_matrix() const {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, position);
+        model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::scale(model, scale);
+        return model;
+    }
+
+    void draw() const {
+        if (VAO == 0) return;
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
 
    private:
@@ -41,64 +120,54 @@ class Mesh {
     std::vector<glm::vec3> temp_normals;
     std::vector<unsigned int> temp_indices;
 
-    // --- Parsing File OFF ---
+    // --- I/O File System ---
     bool load_off(const std::string& filename) {
         std::ifstream file(filename);
-        if (!file.is_open()) {
-            std::cerr << "Errore: Impossibile aprire il file: " << filename << std::endl;
-            return false;
+        if (!file.is_open()) return false;
+
+        std::string header;
+        file >> header;
+        if (header.substr(0, 3) != "OFF") return false;
+
+        int num_vertices = 0, num_faces = 0, num_edges = 0;
+        if (header.length() > 3) {
+            num_vertices = std::stoi(header.substr(3));
+            file >> num_faces >> num_edges;
+        } else {
+            file >> num_vertices >> num_faces >> num_edges;
         }
 
-        std::string line;
-
-        std::getline(file, line);
-        if (line.find("OFF") == std::string::npos) {
-            std::cerr << "Errore: Il file non ha l'intestazione OFF.\n";
-            return false;
-        }
-
-        int vnum = 0, fnum = 0, enum_edges = 0;
-        while (std::getline(file, line)) {
-            if (line.empty() || line[0] == '#') continue;
-            std::stringstream ss(line);
-            ss >> vnum >> fnum >> enum_edges;
-            break;
-        }
-
-        temp_positions.reserve(vnum);
-        for (int i = 0; i < vnum; ++i) {
-            std::getline(file, line);
-            std::stringstream ss(line);
+        temp_positions.reserve(num_vertices);
+        for (int i = 0; i < num_vertices; ++i) {
             glm::vec3 pos;
-            ss >> pos.x >> pos.y >> pos.z;
+            file >> pos.x >> pos.y >> pos.z;
             temp_positions.push_back(pos);
         }
 
-        for (int i = 0; i < fnum; ++i) {
-            std::getline(file, line);
-            std::stringstream ss(line);
-            int num_verts;
-            ss >> num_verts;
-
-            std::vector<unsigned int> face_verts(num_verts);
-            for (int j = 0; j < num_verts; ++j) {
-                ss >> face_verts[j];
+        temp_indices.reserve(num_faces * 3);
+        for (int i = 0; i < num_faces; ++i) {
+            int n;
+            file >> n;
+            if (n != 3) {
+                file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                continue;
             }
+            unsigned int idx0, idx1, idx2;
+            file >> idx0 >> idx1 >> idx2;
 
-            for (int j = 1; j < num_verts - 1; ++j) {
-                temp_indices.push_back(face_verts[0]);
-                temp_indices.push_back(face_verts[j]);
-                temp_indices.push_back(face_verts[j + 1]);
-            }
+            temp_indices.push_back(idx0);
+            temp_indices.push_back(idx1);
+            temp_indices.push_back(idx2);
+
+            file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
         return true;
     }
 
-    // --- Normalizzazione (Bounding Box) ---
+    // --- Pipeline Geometria ---
     void normalize_mesh() {
         if (temp_positions.empty()) return;
 
-        // Trova i limiti minimi e massimi della mesh
         glm::vec3 min_bounds = temp_positions[0];
         glm::vec3 max_bounds = temp_positions[0];
 
@@ -107,20 +176,18 @@ class Mesh {
             max_bounds = glm::max(max_bounds, pos);
         }
 
-        // Calcola il centro esatto dell'oggetto
-        glm::vec3 center = (min_bounds + max_bounds) * 0.5f;
+        glm::vec3 center = (min_bounds + max_bounds) / 2.0f;
+        glm::vec3 dimensions = max_bounds - min_bounds;
+        float max_dim = std::max({dimensions.x, dimensions.y, dimensions.z});
 
-        // Calcola l'estensione massima per mantenere le proporzioni originali
-        glm::vec3 extents = max_bounds - min_bounds;
-        float max_extent = std::max({extents.x, extents.y, extents.z});
+        if (max_dim == 0.0f) max_dim = 1.0f;
 
-        // Applica la trasformazione: Sposta al centro e scala a grandezza massima 1.0
         for (auto& pos : temp_positions) {
-            pos = (pos - center) / max_extent;
+            pos = (pos - center) / max_dim;
         }
     }
 
-    // --- Smooth Shading ---
+    // --- Pipeline Normali ---
     void compute_smooth_normals() {
         temp_normals.assign(temp_positions.size(), glm::vec3(0.0f));
 
@@ -129,11 +196,8 @@ class Mesh {
             unsigned int i1 = temp_indices[i + 1];
             unsigned int i2 = temp_indices[i + 2];
 
-            glm::vec3 v0 = temp_positions[i0];
-            glm::vec3 v1 = temp_positions[i1];
-            glm::vec3 v2 = temp_positions[i2];
-
-            glm::vec3 face_normal = glm::cross(v1 - v0, v2 - v0);
+            glm::vec3 face_normal = glm::cross(temp_positions[i1] - temp_positions[i0],
+                                               temp_positions[i2] - temp_positions[i0]);
 
             temp_normals[i0] += face_normal;
             temp_normals[i1] += face_normal;
@@ -141,62 +205,91 @@ class Mesh {
         }
 
         for (auto& normal : temp_normals) {
-            normal = glm::normalize(normal);
+            if (glm::length(normal) > 1e-6f) {
+                normal = glm::normalize(normal);
+            } else {
+                normal = glm::vec3(0.0f, 1.0f, 0.0f);
+            }
         }
     }
 
-   void compute_flat_normals() {
-        // Creiamo nuovi vettori "srotolati" per non sovrascrivere i vertici condivisi
+    void compute_flat_normals() {
         std::vector<glm::vec3> new_positions;
         std::vector<glm::vec3> new_normals;
         std::vector<unsigned int> new_indices;
+
+        size_t new_size = temp_indices.size();
+        new_positions.reserve(new_size);
+        new_normals.reserve(new_size);
+        new_indices.reserve(new_size);
 
         for (size_t i = 0; i < temp_indices.size(); i += 3) {
             unsigned int i0 = temp_indices[i];
             unsigned int i1 = temp_indices[i + 1];
             unsigned int i2 = temp_indices[i + 2];
 
-            glm::vec3 v0 = temp_positions[i0];
-            glm::vec3 v1 = temp_positions[i1];
-            glm::vec3 v2 = temp_positions[i2];
+            glm::vec3 cross_prod = glm::cross(temp_positions[i1] - temp_positions[i0],
+                                              temp_positions[i2] - temp_positions[i0]);
 
-            // 1. Calcoliamo la normale della faccia
-            glm::vec3 face_normal = glm::normalize(glm::cross(v1 - v0, v2 - v0));
+            glm::vec3 face_normal;
+            if (glm::length(cross_prod) > 1e-6f) {
+                face_normal = glm::normalize(cross_prod);
+            } else {
+                face_normal = glm::vec3(0.0f, 1.0f, 0.0f);
+            }
 
-            // 3. Duplichiamo i vertici "scollandoli" dagli altri triangoli
-            new_positions.push_back(v0);
-            new_positions.push_back(v1);
-            new_positions.push_back(v2);
-
-            // Assegniamo la stessa normale piatta a tutti e 3 i vertici
-            new_normals.push_back(face_normal);
-            new_normals.push_back(face_normal);
-            new_normals.push_back(face_normal);
-
-            // 4. Aggiorniamo gli indici per puntare ai nuovi vertici appena creati
-            unsigned int current_idx = new_positions.size() - 3;
-            new_indices.push_back(current_idx);
-            new_indices.push_back(current_idx + 1);
-            new_indices.push_back(current_idx + 2);
+            for (unsigned int idx : {i0, i1, i2}) {
+                new_positions.push_back(temp_positions[idx]);
+                new_normals.push_back(face_normal);
+                new_indices.push_back(static_cast<unsigned int>(new_positions.size() - 1));
+            }
         }
 
-        // Sovrascriviamo i vecchi vettori: ora pack_for_gpu() funzionerà perfettamente!
-        temp_positions = new_positions;
-        temp_normals = new_normals;
-        temp_indices = new_indices;
+        temp_positions = std::move(new_positions);
+        temp_normals = std::move(new_normals);
+        temp_indices = std::move(new_indices);
     }
 
-    // --- GPU Packing ---
-    void pack_for_gpu() {
-        vertices.reserve(temp_positions.size() * 6);
+    // --- Pipeline Memoria Video ---
+    void build_vertices() {
+        vertices.reserve(temp_positions.size());
         for (size_t i = 0; i < temp_positions.size(); ++i) {
-            vertices.push_back(temp_positions[i].x);
-            vertices.push_back(temp_positions[i].y);
-            vertices.push_back(temp_positions[i].z);
-            vertices.push_back(temp_normals[i].x);
-            vertices.push_back(temp_normals[i].y);
-            vertices.push_back(temp_normals[i].z);
+            Vertex vertex;
+            vertex.position = temp_positions[i];
+            vertex.normal = temp_normals[i];
+            vertices.push_back(vertex);
         }
-        indices = temp_indices;
+        indices = std::move(temp_indices);
+
+        temp_positions.clear();
+        temp_positions.shrink_to_fit();
+        temp_normals.clear();
+        temp_normals.shrink_to_fit();
+    }
+
+    void setup_gl_resources() {
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(),
+                     GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(),
+                     GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              (void*)offsetof(Vertex, position));
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                              (void*)offsetof(Vertex, normal));
+        glEnableVertexAttribArray(1);
+
+        glBindVertexArray(0);
     }
 };
