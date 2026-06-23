@@ -47,6 +47,7 @@ class Setup {
                                          (desktop.size.y - window_height) / 2));
 
         window->setFramerateLimit(60);
+        window->requestFocus();
         window->setMouseCursorGrabbed(true);
         window->setMouseCursorVisible(false);
 
@@ -82,9 +83,20 @@ void handle_events(sf::Window& window, bool& running, Camera& camera, float dt, 
             } else if (keyPressed->scancode == sf::Keyboard::Scancode::Tab) {
                 wantImGui = !wantImGui;
                 window.setMouseCursorVisible(wantImGui);
+                window.setMouseCursorGrabbed(!wantImGui);
             }
         } else if (const auto* mouse_raw = event->getIf<sf::Event::MouseMovedRaw>()) {
             mouse.event(*mouse_raw);
+        } else if (event->is<sf::Event::FocusLost>()) {
+            // Rilascia il mouse e rendilo visibile per il sistema operativo.
+            window.setMouseCursorGrabbed(false);
+            window.setMouseCursorVisible(true);
+        } else if (event->is<sf::Event::FocusGained>()) {
+            // Cattura il mouse solo se l'utente non è in modalità UI (ImGui).
+            if (!wantImGui) {
+                window.setMouseCursorGrabbed(true);
+                window.setMouseCursorVisible(false);
+            }
         }
     }
 
