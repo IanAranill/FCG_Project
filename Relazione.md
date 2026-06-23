@@ -76,6 +76,30 @@ Per garantire che il motore grafico possa essere compilato e distribuito in modo
 **Refactoring dell'Input della Camera (FPS Style)**
 A livello applicativo, la navigazione della scena 3D è stata rivista per offrire un'esperienza fluida e immersiva. Si è abbandonato il vincolo del "click-to-look" (pressione continua del tasto del mouse) in favore di un sistema a cursore catturato (Pointer Lock / Cursor Grabbing). Il movimento raw del mouse viene ora intercettato costantemente per aggiornare i vettori di direzione della telecamera, disaccoppiando l'interfaccia utente (ImGui, per ora assente) dal viewport 3D in pieno stile *First-Person Shooter*.
 
+#### Stage 07: Sviluppo ed Integrazione dell'Interfaccia Utente (ImGui)
+
+Al fine di dotare il motore grafico di uno strumento di ispezione e debugging interattivo, è stata integrata la libreria *ImGui* con binding *ImGui-SFML*. L'obiettivo principale è stato consentire la modifica a runtime delle proprietà ottiche e geometriche della scena senza ricompilazione, mantenendo al contempo l'architettura pulita e disaccoppiata.
+
+**Funzionalità Implementate**
+1. **Controllo Dinamico delle Uniform Shader:** È stato implementato un pannello di controllo ("Impostazioni") strutturato in macro-sezioni collassabili (`CollapsingHeader`). Tramite questo layer, i dati modificati dall'utente vengono mappati pronti per essere inviati alla GPU.
+   * **Illuminazione:** Gestione spaziale della sorgente (vettore di posizione della luce direzionale) e manipolazione cromatica della componente sia diretta che ambientale tramite color picker nativi.
+   * **Modello di Riflessione (Phong):** Regolazione fine dei coefficienti dei materiali delle singole mesh (*Ambient*, *Diffuse*, *Specular*) e dell'esponente di *Shininess* per alterare analiticamente l'opacità superficiale.
+2. **Trasformazioni Affini e Uniform Scaling:** Oltre alla traslazione spaziale delle mesh, è stato introdotto un algoritmo di scaling uniforme. Intercettando lo stato di modifica di un singolo slider quantizzato, il sistema aggiorna proporzionalmente tutte e tre le componenti del vettore di scala (`glm::vec3`), scongiurando distorsioni geometriche indesiderate lungo gli assi locali e invece tramite un pannello simile a quello della posizione della luce si possono spostare le mesh.
+3. **Switch di Contesto dell'Input:** È stato architettato un sistema a due stati (interfaccia attiva/inattiva) regolato dal tasto `Right Shift`, che inibisce selettivamente il processing degli eventi di movimento per la telecamera in prima persona quando l'utente deve interagire con i widget della UI.
+
+**Difficoltà Incontrate e Soluzioni Ingegneristiche**
+1. Conflitto di Z-Order e Focus all'Inizializzazione della Finestra
+* **Problema:** Al boot dell'applicazione, la finestra di rendering veniva istanziata dal Window Manager in fondo alla pila delle finestre attive del sistema operativo (Z-order errato), risultando invisibile e richiedendo un Alt-Tab manuale. Di conseguenza, le funzioni di *cursor grab* fallivano o intrappolavano il mouse nel vuoto.
+* **Soluzione:** È stata ristrutturata la sequenza di configurazione nel costruttore della classe `Setup`. Subito dopo la definizione del contesto OpenGL e la creazione della finestra, è stata introdotta una chiamata esplicita a `window->requestFocus()`. Questo forza il Window Manager a portare il focus dell'OS in primo piano sull'applicazione, garantendo la corretta esecuzione delle successive routine di inizializzazione di ImGui.
+2. Disallineamento dello Stato del Cursore e "Cursor Trapping" nei cambi di Focus
+* **Problema:** L'utilizzo della funzione nativa `setMouseCursorGrabbed(true)` per bloccare il mouse al centro dello schermo durante il controllo della telecamera causava gravi conflitti in caso di eventi esterni (es. clic fuori dalla finestra, utilizzo di scorciatoie di sistema o passaggio ad altre applicazioni). Il cursore rimaneva invisibile o confinato, alterando l'esperienza utente globale.
+* **Soluzione:** Il problema è stato risolto implementando una macchina a stati guidata dall'ascolto attivo degli eventi di sistema `FocusLost` e `FocusGained` nel ciclo di polling. 
+  * Al verificarsi di `FocusLost`, l'engine rilascia immediatamente il grab del mouse e ne ripristina la visibilità a livello OS.
+  * Al subentrare di `FocusGained`, il mouse viene nuovamente catturato e nascosto *solo ed esclusivamente* se la modalità interfaccia (`wantImGui`) non è attiva. Questo garantisce una transizione fluida e sicura tra l'ambiente di gioco e il sistema operativo.
+3. Inquinamento dell'Input e Movimenti Parassiti della Telecamera
+* **Problema:** Durante la digitazione all'interno dei campi di testo di ImGui o durante il trascinamento degli slider, gli input da tastiera (es. tasti W, A, S, D) e i movimenti del mouse venivano propagati anche al sistema di movimento della telecamera, causando spostamenti involontari nello spazio 3D.
+* **Soluzione:** È stata introdotta una logica di filtraggio condizionale rigida all'interno della routine `handle_events`. Sfruttando i flag interni di ImGui (come `ImGui::GetIO().WantCaptureKeyboard`) e la variabile di stato `wantImGui`, i delta del mouse raw e gli stati della tastiera vengono completamente ignorati dalla classe `Camera` qualora l'utente stia interagendo con la UI. In questo modo si garantisce il perfetto isolamento dei due contesti di input.
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
