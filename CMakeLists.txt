@@ -9,6 +9,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+if(MINGW)
+    add_link_options(-static -static-libgcc -static-libstdc++)
+endif()
+
 # ==============================================================================
 # 2. GESTIONE DIPENDENZE ESTERNE (FetchContent)
 # ==============================================================================
@@ -61,6 +65,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(ImGui-SFML)
 set(IMGUI_DIR ${imgui_SOURCE_DIR})
 
+# CoreGraphics Library for raw mouse in MacOS
+if(APPLE)
+    find_library(CORE_GRAPHICS_LIB CoreGraphics REQUIRED)
+endif()
+
 # ==============================================================================
 # 3. IMPOSTAZIONI COMPILATORE E SISTEMA
 # ==============================================================================
@@ -85,10 +94,11 @@ add_executable(${m}
 )
 
 target_link_libraries(${m} PRIVATE 
-    SFML::Window 
+    sfml-graphics
+    sfml-window
+    sfml-system
     glm::glm-header-only 
-    ImGui-SFML::ImGui-SFML 
-    OpenGL::GL 
+    ImGui-SFML::ImGui-SFML
     common
 )
 

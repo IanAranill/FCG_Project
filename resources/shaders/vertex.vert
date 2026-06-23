@@ -14,8 +14,8 @@ void main() {
     vec4 worldPos = model * vec4(pos, 1.0);
 
     gl_Position = vp * worldPos;
-    
+
     post_vertex_position = vec3(worldPos);
-    
+
     post_vertex_norm = normalize(normal_matrix * norm);
 }

@@ -19,6 +19,7 @@
 #include "include/hotshaders.hh"
 #include "include/lighting.hh"
 #include "include/mesh.hh"
+#include "include/mouse.hh"
 #include "include/scene.hh"
 
 // --- Setup Contesto Finestra ---
@@ -39,7 +40,7 @@ class Setup {
 
         window =
             new sf::Window(sf::VideoMode(sf::Vector2u(window_width, window_height)),
-                           "Progetto FCG - Stage 05 Refactoring", sf::State::Windowed, settings);
+                           "Progetto FCG", sf::State::Windowed, settings);
 
         sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
         window->setPosition(sf::Vector2i((desktop.size.x - window_width) / 2,
@@ -52,16 +53,15 @@ class Setup {
         }
 
         window->setFramerateLimit(60);
-        window->setMouseCursorGrabbed(false);
-        window->setMouseCursorVisible(true);
+        window->setMouseCursorGrabbed(true);
+        window->setMouseCursorVisible(false);
     }
 
     ~Setup() { delete window; }
 };
 
 // --- Polling Eventi OS ---
-void handle_events(sf::Window& window, bool& running, Camera& camera, float dt) {
-    static bool is_dragging = false;
+void handle_events(sf::Window& window, bool& running, Camera& camera, float dt, Mouse& mouse) {
     static sf::Vector2i last_pos;
 
     while (const std::optional<sf::Event> event = window.pollEvent()) {
@@ -71,23 +71,8 @@ void handle_events(sf::Window& window, bool& running, Camera& camera, float dt) 
             if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
                 running = false;
             }
-        } else if (const auto* mbPressed = event->getIf<sf::Event::MouseButtonPressed>()) {
-            if (mbPressed->button == sf::Mouse::Button::Left) {
-                is_dragging = true;
-                last_pos = sf::Vector2i(mbPressed->position.x, mbPressed->position.y);
-            }
-        } else if (const auto* mbReleased = event->getIf<sf::Event::MouseButtonReleased>()) {
-            if (mbReleased->button == sf::Mouse::Button::Left) {
-                is_dragging = false;
-            }
-        } else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>()) {
-            if (is_dragging) {
-                sf::Vector2i current_pos(mouseMoved->position.x, mouseMoved->position.y);
-                sf::Vector2i delta = current_pos - last_pos;
-
-                camera.process_mouse_drag(static_cast<float>(delta.x), static_cast<float>(delta.y));
-                last_pos = current_pos;
-            }
+        } else if (const auto* mouse_raw = event->getIf<sf::Event::MouseMovedRaw>()) {
+            mouse.event(*mouse_raw);
         }
     }
 
@@ -116,6 +101,7 @@ int main() {
     Shaders shaders("resources/shaders/vertex.vert", "resources/shaders/fragment.frag");
     Camera camera(glm::vec3(0.0f, 1.0f, 5.0f));
     Lighting scene_lighting;
+    Mouse mouse;
 
     // --- Allocazione Geometrie ---
     Mesh corner("resources/meshes/corner.off", false);
@@ -143,7 +129,12 @@ int main() {
         float dt = delta_clock.restart().asSeconds();
         if (dt > 0.1f) dt = 0.1f;
 
-        handle_events(window, running, camera, dt);
+        handle_events(window, running, camera, dt, mouse);
+
+        if (sf::Vector2f mDelta = mouse.delta();
+            std::abs(mDelta.x) > 0.0f || std::abs(mDelta.y) > 0.0f) {
+            camera.process_mouse_drag(mDelta.x, mDelta.y);
+        }
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
