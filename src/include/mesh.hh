@@ -35,6 +35,9 @@ class Mesh {
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale = glm::vec3(1.0f);
 
+    std::unordered_map<std::string, glm::vec3> vec3_uniforms;
+    std::unordered_map<std::string, float> float_uniforms;
+
     // --- Ciclo di Vita e Memory Management ---
     Mesh() = default;
 
@@ -52,6 +55,13 @@ class Mesh {
             compute_flat_normals();
         }
 
+        // Valori iniziali Materiale
+        vec3_uniforms["material.diffuse"] = glm::vec3(0.1f, 0.7f, 0.8f);
+        vec3_uniforms["material.specular"] = glm::vec3(0.5f, 0.5f, 0.5f);
+        vec3_uniforms["material.ambient"] = glm::vec3(0.1f, 0.7f, 0.8f);
+
+        float_uniforms["material.shininess"] = 64.0f;
+
         build_vertices();
         setup_gl_resources();
     }
@@ -64,38 +74,6 @@ class Mesh {
 
     Mesh(const Mesh&) = delete;
     Mesh& operator=(const Mesh&) = delete;
-
-    Mesh(Mesh&& other) noexcept
-        : vertices(std::move(other.vertices)),
-          indices(std::move(other.indices)),
-          VAO(other.VAO),
-          VBO(other.VBO),
-          EBO(other.EBO),
-          position(other.position),
-          rotation(other.rotation),
-          scale(other.scale) {
-        other.VAO = other.VBO = other.EBO = 0;
-    }
-
-    Mesh& operator=(Mesh&& other) noexcept {
-        if (this != &other) {
-            if (VAO) glDeleteVertexArrays(1, &VAO);
-            if (VBO) glDeleteBuffers(1, &VBO);
-            if (EBO) glDeleteBuffers(1, &EBO);
-
-            vertices = std::move(other.vertices);
-            indices = std::move(other.indices);
-            VAO = other.VAO;
-            VBO = other.VBO;
-            EBO = other.EBO;
-            position = other.position;
-            rotation = other.rotation;
-            scale = other.scale;
-
-            other.VAO = other.VBO = other.EBO = 0;
-        }
-        return *this;
-    }
 
     // --- Interfaccia Rendering ---
     [[nodiscard]] glm::mat4 get_model_matrix() const {
@@ -113,6 +91,16 @@ class Mesh {
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+    }
+
+    void push_material_to_shader(GLuint program) const {
+        for (const auto& [name, value] : vec3_uniforms) {
+            glUniform3fv(glGetUniformLocation(program, name.c_str()), 1, glm::value_ptr(value));
+        }
+
+        for (const auto& [name, value] : float_uniforms) {
+            glUniform1f(glGetUniformLocation(program, name.c_str()), value);
+        }
     }
 
    private:

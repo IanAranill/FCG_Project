@@ -80,7 +80,7 @@ void handle_events(sf::Window& window, bool& running, Camera& camera, float dt, 
                    keyPressed && !ImGui::GetIO().WantCaptureKeyboard) {
             if (keyPressed->scancode == sf::Keyboard::Scancode::Escape) {
                 running = false;
-            } else if (keyPressed->scancode == sf::Keyboard::Scancode::Tab) {
+            } else if (keyPressed->scancode == sf::Keyboard::Scancode::RShift) {
                 wantImGui = !wantImGui;
                 window.setMouseCursorVisible(wantImGui);
                 window.setMouseCursorGrabbed(!wantImGui);
@@ -100,7 +100,7 @@ void handle_events(sf::Window& window, bool& running, Camera& camera, float dt, 
         }
     }
 
-    if (window.hasFocus() && !ImGui::GetIO().WantCaptureKeyboard) {
+    if (window.hasFocus() && !wantImGui) {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::W))
             camera.process_keyboard(CameraMovement::FORWARD, dt);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::S))
@@ -125,12 +125,53 @@ void update_ImGui(const sf::Window& window, const sf::Time& elapsed, bool wantIm
     ImGui::SFML::Update(sf::Mouse::getPosition(window), sf::Vector2f(window.getSize()), elapsed);
 }
 
-void draw_ImGui() {
+void draw_ImGui(Light& scene_light, Mesh& corner, Mesh& bunny) {
     ImGui_ImplOpenGL3_NewFrame();
 
-    ImGui::ShowDemoWindow();
-    ImGui::Begin("Hello, world!");
-    ImGui::Button("Look at this pretty button");
+    ImGui::Begin("Impostazioni");
+    if (ImGui::CollapsingHeader("Luce")) {
+        ImGui::DragFloat3("Posizione luce",
+                          glm::value_ptr(scene_light.vec3_uniforms["light.direct_pos"]), 0.1f);
+        ImGui::ColorEdit3("Colore luce",
+                          glm::value_ptr(scene_light.vec3_uniforms["light.direct_val"]));
+        ImGui::ColorEdit3("Colore luce ambientale",
+                          glm::value_ptr(scene_light.vec3_uniforms["light.ambient"]));
+    }
+
+    if (ImGui::CollapsingHeader("Bunny")) {
+        ImGui::DragFloat3("Ambiente bunny", glm::value_ptr(bunny.vec3_uniforms["material.ambient"]),
+                          0.01f, 0.0f, 1.0f);
+        ImGui::DragFloat3("Diffuso bunny", glm::value_ptr(bunny.vec3_uniforms["material.diffuse"]),
+                          0.01f, 0.0f, 1.0f);
+        ImGui::DragFloat3("Speculare bunny",
+                          glm::value_ptr(bunny.vec3_uniforms["material.specular"]), 0.01f, 0.0f,
+                          1.0f);
+        ImGui::DragFloat("Shininess bunny", &bunny.float_uniforms["material.shininess"], 0.1f);
+        ImGui::DragFloat3("Posizione bunny", glm::value_ptr(bunny.position), 0.1f);
+        float uniform_scale = bunny.scale.x;
+        if (ImGui::DragFloat("Scala bunny", &uniform_scale, 0.1f)) {
+            bunny.scale = glm::vec3(uniform_scale);
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Stanza")) {
+        ImGui::DragFloat3("Ambiente stanza",
+                          glm::value_ptr(corner.vec3_uniforms["material.ambient"]), 0.01f, 0.0f,
+                          1.0f);
+        ImGui::DragFloat3("Diffuso stanza",
+                          glm::value_ptr(corner.vec3_uniforms["material.diffuse"]), 0.01f, 0.0f,
+                          1.0f);
+        ImGui::DragFloat3("Speculare stanza",
+                          glm::value_ptr(corner.vec3_uniforms["material.specular"]), 0.01f, 0.0f,
+                          1.0f);
+        ImGui::DragFloat("Shininess stanza", &corner.float_uniforms["material.shininess"], 0.1f);
+        ImGui::DragFloat3("Posizione stanza", glm::value_ptr(corner.position), 0.1f);
+
+        float uniform_scale = corner.scale.x;
+        if (ImGui::DragFloat("Scala stanza", &uniform_scale, 0.1f)) {
+            corner.scale = glm::vec3(uniform_scale);
+        }
+    }
     ImGui::End();
 
     ImGui::Render();
@@ -149,7 +190,7 @@ int main() {
     // --- Inizializzazione Sottosistemi ---
     Shaders shaders("resources/shaders/vertex.vert", "resources/shaders/fragment.frag");
     Camera camera(glm::vec3(0.0f, 1.0f, 5.0f));
-    Lighting scene_lighting;
+    Light scene_light;
     Mouse mouse;
 
     // --- Allocazione Geometrie ---
@@ -194,12 +235,12 @@ int main() {
 
         shaders.use();
         camera.push_to_shader(shaders.program, aspect_ratio);
-        scene_lighting.push_to_shader(shaders.program);
+        scene_light.push_to_shader(shaders.program);
 
         scene.draw(shaders.program);
 
         update_ImGui(window, elapsed, wantImGui);
-        draw_ImGui();
+        draw_ImGui(scene_light, corner, bunny);
 
         window.display();
     }
