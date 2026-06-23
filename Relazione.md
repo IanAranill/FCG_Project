@@ -45,6 +45,25 @@ In questa fase, l'obiettivo principale è stato risolvere le pesanti discrepanze
 
 ![Problema di illuminazione - parete con bug di luminosità](resources/screenshots/stage04_light_error.png)
 
+#### Stage 05: Refactoring Architetturale e Shading Avanzato
+
+In questo stage l'obiettivo primario è stato risolvere definitivamente gli artefatti visivi ereditati dalle fasi precedenti e consolidare un'architettura software solida e priva di bug logici prima di procedere con gli effetti grafici avanzati.
+
+* **Refactoring:** La comunicazione tra CPU e GPU (invio delle matrici `Uniform`) è stata fortemente incapsulata nelle classi competenti, rendendo il `main` unicamente responsabile della logica di alto livello.
+* **Allineamento dell'Illuminazione:** Il bug delle superfici oscurate (come il soffitto nero) è stato corretto posizionando coerentemente la sorgente luminosa all'interno della geometria della stanza, assecondando le nuove dimensioni acquisite dopo i passaggi di normalizzazione e scalatura applicati nello Stage 04.
+* **Risoluzione Artefatti di Shading:**
+  * **Superfici Curve:** Il modello del coniglio durante lo sviluppo di questo passo ha estese corruzioni visive a causa di micro-triangoli degeneri che facevano fallire i calcoli matematici delle normali. Il problema è stato risolto implementando le **Area-Weighted Normals**, un algoritmo che calcola l'illuminazione pesando l'influenza di ciascun poligono in base alla sua area reale, producendo una superficie morbida e priva di imperfezioni.
+  * **Superfici Architetturali:** L'algoritmo di smoothing tendeva a smussare erroneamente e fondere visivamente spigoli a 90° che sarebbero dovuti rimanere netti (come i muri o il camino della stanza) causando errori nella visualizazione della luce. È stato introdotto un sistema di switch per abilitare il **Flat Shading** sulle geometrie rigide, duplicando i vertici sugli angoli e garantendo la preservazione degli spigoli vivi.
+* **Stato Attuale:** Il motore grafico è ora matematicamente stabile. Le ombre, le proporzioni e le risposte alla luce dei diversi tipi di superficie (organica e rigida) sono calcolate correttamente e in tempo reale. L'infrastruttura è pronta per ospitare le operazioni su Stencil Buffer nel prossimo stage.
+
+![Refactor e fix illuminazione riuscito](resources/screenshots/stage05).
+
+* **Le Sfide Architetturali**
+Durante questo stage, l'ostacolo più importante non è stato prettamente visivo o matematico, ma architetturale, legato al refactoring estremo del codice:
+
+* **Ricostruzione della classe Mesh:** Scardinare le vecchie fondamenta del parsing per riscrivere un'infrastruttura capace di elaborare *Area-Weighted Normals* e gestire le risorse GPU in sicurezza ha richiesto uno sforzo notevole. È stato necessario abbattere e ricostruire l'intero ponte tra i dati su disco e la memoria video, gestendo la corruzione da micro-poligoni e riallineando un'enorme quantità di codice.
+* **Migrazione della logica di basso livello:** L'intento di svuotare il `main` dalle responsabilità di calcolo (es. moltiplicazione delle matrici View-Projection o binding degli Shader) per incapsularle in `Camera`, `Scene` e `Lighting` ha innescato un "effetto domino". Spostare una singola direttiva OpenGL rompeva la delicata sincronia dei dati GPU, costringendoci a complesse sessioni di tracciamento per ripristinare il corretto flusso della pipeline grafica.
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
