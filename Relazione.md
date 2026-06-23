@@ -84,8 +84,13 @@ Al fine di dotare il motore grafico di uno strumento di ispezione e debugging in
 1. **Controllo Dinamico delle Uniform Shader:** È stato implementato un pannello di controllo ("Impostazioni") strutturato in macro-sezioni collassabili (`CollapsingHeader`). Tramite questo layer, i dati modificati dall'utente vengono mappati pronti per essere inviati alla GPU.
    * **Illuminazione:** Gestione spaziale della sorgente (vettore di posizione della luce direzionale) e manipolazione cromatica della componente sia diretta che ambientale tramite color picker nativi.
    * **Modello di Riflessione (Phong):** Regolazione fine dei coefficienti dei materiali delle singole mesh (*Ambient*, *Diffuse*, *Specular*) e dell'esponente di *Shininess* per alterare analiticamente l'opacità superficiale.
+
+![Cambio di colori e UI](resources/screenshots/stage07.png).
+
 2. **Trasformazioni Affini e Uniform Scaling:** Oltre alla traslazione spaziale delle mesh, è stato introdotto un algoritmo di scaling uniforme. Intercettando lo stato di modifica di un singolo slider quantizzato, il sistema aggiorna proporzionalmente tutte e tre le componenti del vettore di scala (`glm::vec3`), scongiurando distorsioni geometriche indesiderate lungo gli assi locali e invece tramite un pannello simile a quello della posizione della luce si possono spostare le mesh.
 3. **Switch di Contesto dell'Input:** È stato architettato un sistema a due stati (interfaccia attiva/inattiva) regolato dal tasto `Right Shift`, che inibisce selettivamente il processing degli eventi di movimento per la telecamera in prima persona quando l'utente deve interagire con i widget della UI.
+
+![Cambio di scala degli oggetti e esempio di Color Picker della UI](resources/screenshots/stage07_scale.png).
 
 **Difficoltà Incontrate e Soluzioni Ingegneristiche**
 1. Conflitto di Z-Order e Focus all'Inizializzazione della Finestra
