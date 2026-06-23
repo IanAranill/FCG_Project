@@ -114,3 +114,7 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 
 * I controlli rimangono invariati
 
+#### Controlli Stage 06
+
+* **Mouse (Movimento):** Ruota la visuale / Guarda attorno (Il cursore viene catturato automaticamente all'avvio della finestra).
+* **Movimento Lineare:** Usa i tasti <kbd>W</kbd>, <kbd>A</kbd>, <kbd>S</kbd>, <kbd>D</kbd> per spostare la telecamera nello spazio (Avanti, Sinistra, Indietro, Destra).
