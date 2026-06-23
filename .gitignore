@@ -13,6 +13,7 @@ build/
 build-win/
 build-mac/
 FCG_Stages/
+imgui.ini
 
 # CLion
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
