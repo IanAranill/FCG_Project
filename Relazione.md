@@ -56,7 +56,7 @@ In questo stage l'obiettivo primario è stato risolvere definitivamente gli arte
   * **Superfici Architetturali:** L'algoritmo di smoothing tendeva a smussare erroneamente e fondere visivamente spigoli a 90° che sarebbero dovuti rimanere netti (come i muri o il camino della stanza) causando errori nella visualizazione della luce. È stato introdotto un sistema di switch per abilitare il **Flat Shading** sulle geometrie rigide, duplicando i vertici sugli angoli e garantendo la preservazione degli spigoli vivi.
 * **Stato Attuale:** Il motore grafico è ora matematicamente stabile. Le ombre, le proporzioni e le risposte alla luce dei diversi tipi di superficie (organica e rigida) sono calcolate correttamente e in tempo reale. L'infrastruttura è pronta per ospitare le operazioni su Stencil Buffer nel prossimo stage.
 
-![Refactor e fix illuminazione riuscito](resources/screenshots/stage05.png).
+![Refactor e fix illuminazione riuscito](resources/screenshots/stage05.png)
 
 * **Le Sfide Architetturali**
 Durante questo stage, l'ostacolo più importante non è stato prettamente visivo o matematico, ma architetturale, legato al refactoring estremo del codice:
@@ -85,12 +85,12 @@ Al fine di dotare il motore grafico di uno strumento di ispezione e debugging in
    * **Illuminazione:** Gestione spaziale della sorgente (vettore di posizione della luce direzionale) e manipolazione cromatica della componente sia diretta che ambientale tramite color picker nativi.
    * **Modello di Riflessione (Phong):** Regolazione fine dei coefficienti dei materiali delle singole mesh (*Ambient*, *Diffuse*, *Specular*) e dell'esponente di *Shininess* per alterare analiticamente l'opacità superficiale.
 
-![Cambio di colori e UI](resources/screenshots/stage07.png).
+![Cambio di colori e UI](resources/screenshots/stage07.png)
 
 2. **Trasformazioni Affini e Uniform Scaling:** Oltre alla traslazione spaziale delle mesh, è stato introdotto un algoritmo di scaling uniforme. Intercettando lo stato di modifica di un singolo slider quantizzato, il sistema aggiorna proporzionalmente tutte e tre le componenti del vettore di scala (`glm::vec3`), scongiurando distorsioni geometriche indesiderate lungo gli assi locali e invece tramite un pannello simile a quello della posizione della luce si possono spostare le mesh.
 3. **Switch di Contesto dell'Input:** È stato architettato un sistema a due stati (interfaccia attiva/inattiva) regolato dal tasto `Right Shift`, che inibisce selettivamente il processing degli eventi di movimento per la telecamera in prima persona quando l'utente deve interagire con i widget della UI.
 
-![Cambio di scala degli oggetti e esempio di Color Picker della UI](resources/screenshots/stage07_scale.png).
+![Cambio di scala degli oggetti e esempio di Color Picker della UI](resources/screenshots/stage07_scale.png)
 
 **Difficoltà Incontrate e Soluzioni Ingegneristiche**
 1. Conflitto di Z-Order e Focus all'Inizializzazione della Finestra
