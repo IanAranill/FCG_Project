@@ -64,6 +64,18 @@ Durante questo stage, l'ostacolo più importante non è stato prettamente visivo
 * **Ricostruzione della classe Mesh:** Scardinare le vecchie fondamenta del parsing per riscrivere un'infrastruttura capace di elaborare *Area-Weighted Normals* e gestire le risorse GPU in sicurezza ha richiesto uno sforzo notevole. È stato necessario abbattere e ricostruire l'intero ponte tra i dati su disco e la memoria video, gestendo la corruzione da micro-poligoni e riallineando un'enorme quantità di codice.
 * **Migrazione della logica di basso livello:** L'intento di svuotare il `main` dalle responsabilità di calcolo (es. moltiplicazione delle matrici View-Projection o binding degli Shader) per incapsularle in `Camera`, `Scene` e `Lighting` ha innescato un "effetto domino". Spostare una singola direttiva OpenGL rompeva la delicata sincronia dei dati GPU, costringendoci a complesse sessioni di tracciamento per ripristinare il corretto flusso della pipeline grafica.
 
+#### Stage 06: Architettura Cross-Platform, Toolchain e Input mouse stile FPS
+
+Il lavoro svolto in questo stage si è concentrato su due macro-obiettivi fondamentali per la scalabilità del progetto: l'ingegnerizzazione del sistema di build e il miglioramento dell'interazione utente all'interno dell'ambiente 3D.
+
+**Sistema di Build e Cross-Compilazione Sicura**
+Per garantire che il motore grafico possa essere compilato e distribuito in modo riproducibile su sistemi operativi diversi, l'intera pipeline di build è stata riscritta utilizzando uno standard moderno di **CMake (C++20)**.
+* Sono state redatte toolchain specifiche (es. `windows-toolchain.cmake` e `macos-toolchain.cmake`) per permettere la cross-compilazione sicura da ambiente Linux. 
+* *Risoluzione criticità tecniche:* È stata affrontata e risolta una problematica architetturale intrinseca a *MinGW-w64* riguardante la gestione concorrente (multithreading). Il backend interno di SFML 3.0 richiede il pieno supporto allo standard `<mutex>` del C++ moderno per la gestione dei contesti WGL/OpenGL; per superare la limitazione del modello di threading nativo di Windows, la toolchain è stata forzata a utilizzare la variante del compilatore basata su **POSIX** (`-posix`), garantendo memory-safety e stabilità senza alterare il codice sorgente della libreria.
+
+**Refactoring dell'Input della Camera (FPS Style)**
+A livello applicativo, la navigazione della scena 3D è stata rivista per offrire un'esperienza fluida e immersiva. Si è abbandonato il vincolo del "click-to-look" (pressione continua del tasto del mouse) in favore di un sistema a cursore catturato (Pointer Lock / Cursor Grabbing). Il movimento raw del mouse viene ora intercettato costantemente per aggiornare i vettori di direzione della telecamera, disaccoppiando l'interfaccia utente (ImGui, per ora assente) dal viewport 3D in pieno stile *First-Person Shooter*.
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
