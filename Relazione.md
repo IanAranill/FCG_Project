@@ -56,7 +56,7 @@ In questo stage l'obiettivo primario è stato risolvere definitivamente gli arte
   * **Superfici Architetturali:** L'algoritmo di smoothing tendeva a smussare erroneamente e fondere visivamente spigoli a 90° che sarebbero dovuti rimanere netti (come i muri o il camino della stanza) causando errori nella visualizazione della luce. È stato introdotto un sistema di switch per abilitare il **Flat Shading** sulle geometrie rigide, duplicando i vertici sugli angoli e garantendo la preservazione degli spigoli vivi.
 * **Stato Attuale:** Il motore grafico è ora matematicamente stabile. Le ombre, le proporzioni e le risposte alla luce dei diversi tipi di superficie (organica e rigida) sono calcolate correttamente e in tempo reale. L'infrastruttura è pronta per ospitare le operazioni su Stencil Buffer nel prossimo stage.
 
-![Refactor e fix illuminazione riuscito](resources/screenshots/stage05).
+![Refactor e fix illuminazione riuscito](resources/screenshots/stage05.png).
 
 * **Le Sfide Architetturali**
 Durante questo stage, l'ostacolo più importante non è stato prettamente visivo o matematico, ma architetturale, legato al refactoring estremo del codice:
