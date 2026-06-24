@@ -43,19 +43,15 @@ class Camera {
     }
 
     // --- Gestione Shader ---
+    // In camera.hh, sostituisci la funzione push_to_shader con questa:
     void push_to_shader(GLuint program, float aspect_ratio) const {
         glm::mat4 view = get_view_matrix();
         glm::mat4 projection = get_projection_matrix(aspect_ratio);
         glm::mat4 vp = projection * view;
 
-        glUniformMatrix4fv(glGetUniformLocation(program, "view"), 1, GL_FALSE,
-                           glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE,
-                           glm::value_ptr(projection));
-
-        // RIPRISTINATO: Matrice VP fondamentale per la coerenza geometrica
         glUniformMatrix4fv(glGetUniformLocation(program, "vp"), 1, GL_FALSE, glm::value_ptr(vp));
-        glUniform3fv(glGetUniformLocation(program, "camera_pos"), 1, glm::value_ptr(position));
+
+        glUniform3fv(glGetUniformLocation(program, "cam_pos"), 1, glm::value_ptr(position));
     }
 
     // --- Gestione Input ---

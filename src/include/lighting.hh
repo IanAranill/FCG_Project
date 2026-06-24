@@ -19,7 +19,7 @@ class Light {
         // Valori iniziali Luce
         vec3_uniforms["light.direct_pos"] = glm::vec3(0.0f, 1.5f, 0.0f);
         vec3_uniforms["light.direct_val"] = glm::vec3(1.0f, 1.0f, 1.0f);
-        vec3_uniforms["light.ambient"] = glm::vec3(0.2f, 0.2f, 0.2f);
+        vec3_uniforms["light.ambient_val"] = glm::vec3(0.2f, 0.2f, 0.2f);
     }
 
     void push_to_shader(GLuint program) const {
