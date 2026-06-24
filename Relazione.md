@@ -125,7 +125,7 @@ Per risolvere il problema senza degradare la precisione del Depth Buffer (come a
 
 Il risultato è un taglio netto e geometricamente perfetto, che risolve l'artefatto senza causare distorsioni alla telecamera principale.
 
-![Specchio con taglio funzionante](resources/screenshots/stage08.png)
+![Specchio con taglio funzionante](resources/screenshots/stage09.png)
 
 ---
 
