@@ -124,3 +124,5 @@ Al fine di dotare il motore grafico di uno strumento di ispezione e debugging in
 Per l'avvio del progetto è stato utilizzato il seguente supporto esterno:
 
 * **Script del Docente:** Lo script `stages.sh` fornito dal professore è utilizzato quasi invariato per il tracciamento dei commit e la compilazione automatizzata multi-tappa (l'unica modifica effettuata è sul controllo del file .gitignore, dove ora è anche accettato `FCG_Stages/` come nome nell'ignore.
+
+* **Algoritmo di riflessione per lo specchio:** L'algoritmo di riflessione multi-pass implementato è basato sulle specifiche per le Planar Reflections via Stencil Buffer formalizzate da Mark Kilgard (NVIDIA). Il metodo garantisce prospettiva e occlusione perfette in tempo reale ribaltando la View-Projection Matrix lungo il piano normale del vetro, e sfruttando l'hardware Rasterizer per scartare i frammenti fuori dalla maschera e correggere l'avvolgimento dei poligoni specchiati.
