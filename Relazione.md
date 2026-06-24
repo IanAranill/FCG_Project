@@ -105,6 +105,19 @@ Al fine di dotare il motore grafico di uno strumento di ispezione e debugging in
 * **Problema:** Durante la digitazione all'interno dei campi di testo di ImGui o durante il trascinamento degli slider, gli input da tastiera (es. tasti W, A, S, D) e i movimenti del mouse venivano propagati anche al sistema di movimento della telecamera, causando spostamenti involontari nello spazio 3D.
 * **Soluzione:** È stata introdotta una logica di filtraggio condizionale rigida all'interno della routine `handle_events`. Sfruttando i flag interni di ImGui (come `ImGui::GetIO().WantCaptureKeyboard`) e la variabile di stato `wantImGui`, i delta del mouse raw e gli stati della tastiera vengono completamente ignorati dalla classe `Camera` qualora l'utente stia interagendo con la UI. In questo modo si garantisce il perfetto isolamento dei due contesti di input.
 
+#### Stage 08: Specchio Planare tramite Stencil Buffer
+**Funzionalità Implementate**
+* L'obiettivo di questo stage è stata l'implementazione di un riflesso planare dinamico ad alte prestazioni. Invece di ricorrere a costose Render Target Textures, si è sfruttato un approccio geometrico basato sullo Stencil Buffer: la scena viene renderizzata una seconda volta dalla prospettiva di una "telecamera riflessa", calcolata dinamicamente tramite un'apposita classe Mirror.
+
+* Il ciclo di rendering del main è stato riprogettato in una pipeline multi-pass. Dopo aver disegnato il mondo reale e il retro opaco dello specchio, la sua faccia frontale crea una maschera nello Stencil Buffer. Per risolvere gravi artefatti visivi di compenetrazione (Ghosting) in cui gli oggetti reali apparivano "attraverso" il vetro, è stato forzato il tracciamento dello specchio anche nel Depth Buffer, garantendo un'occlusione geometrica perfetta prima di disegnare la scena specchiata con i triangoli invertiti (glFrontFace(GL_CW)).
+
+![Corretto funzionamento dello specchio](resources/screenshots/stage08.png)
+
+**Difficoltà Incontrate e bug noti**
+* Lo specchio essendo stato implementato tramite un punto di vista "dello specchio", vede anche ciò che è dietro di lui e lo mostra, è obiettivo della prossima tappa sistemare questo errore
+
+![Problema della visuale dello specchio](resources/screenshots/stage08_mirror_error.png)
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
