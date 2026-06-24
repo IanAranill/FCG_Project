@@ -128,5 +128,9 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 #### Funzionalità del Pannello "Impostazioni"
 * **Luce:** Consente di regolare le coordinate spaziali (X, Y, Z) della sorgente luminosa e di utilizzare un selettore visivo per modificare i colori della luce diretta e ambientale (tramite slider e campi scrivibili con doppio click).
 * **Modelli (Bunny e Stanza):**
-  * **Materiali:** Permette di bilanciare i coefficienti *Ambient*, *Diffuse* e *Specular* di ogni modello visibile. È possibile modificare il parametro "Shininess" per rendere la superficie più opaca o più lucida.
+  * **Materiali:** Consente di bilanciare i coefficienti *Ambient*, *Diffuse* e *Specular* di ogni modello visibile. È possibile modificare il parametro "Shininess" per rendere la superficie più opaca o più lucida.
   * **Trasformazioni:** Consente di modificare le coordinate di "Posizione" per traslare l'oggetto nello spazio, o di utilizzare lo slider "Scala" per ingrandire e rimpicciolire il modello in modo uniforme e proporzionale su tutti gli assi(tramite slider e campi scrivibili con doppio click).
+
+#### Controlli Stage 08
+
+* **Specchio:** Consente di regolare scala e posizione dello specchio tramite ImGui, e anche la normale modificando il comportamento dello specchio stesso
