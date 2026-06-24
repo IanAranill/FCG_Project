@@ -118,6 +118,15 @@ Al fine di dotare il motore grafico di uno strumento di ispezione e debugging in
 
 ![Problema della visuale dello specchio](resources/screenshots/stage08_mirror_error.png)
 
+#### Stage 09: Risoluzione del Bleeding Geometrico (Hardware Clipping)
+Il modello ottico della telecamera riflessa generava un noto artefatto chiamato Geometric Bleeding: gli oggetti reali situati fisicamente dietro la parete dello specchio entravano nel cono visivo specchiato e venivano erroneamente renderizzati.
+
+Per risolvere il problema senza degradare la precisione del Depth Buffer (come accadrebbe alterando la matrice di proiezione tramite Oblique Near-Plane Clipping), si è sfruttato l'Hardware Clipping nativo di OpenGL 4.1 (User Clip Planes). Durante il rendering del solo riflesso, l'equazione matematica del piano dello specchio viene inviata al Vertex Shader. Abilitando lo stato glEnable(GL_CLIP_DISTANCE0), la GPU calcola la distanza dei vertici dal piano e "cancella" a livello hardware tutto ciò che si trova dietro il vetro.
+
+Il risultato è un taglio netto e geometricamente perfetto, che risolve l'artefatto senza causare distorsioni alla telecamera principale.
+
+![Specchio con taglio funzionante](resources/screenshots/stage08.png)
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
