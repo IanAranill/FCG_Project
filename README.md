@@ -84,27 +84,20 @@ Gli stages seguenti si avviano nello stesso modo, nelle relative cartelle
 
 In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motore grafico inizializza il contesto OpenGL, carica le librerie necessarie ed esegue il game loop di base con una finestra pulita (sfondo grigio).
 
-#### Controlli Tastiera Stage 01
+#### Controlli Stage 01
 
 * **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
 
-#### Controlli Tastiera Stage 02
+#### Controlli Stage 02
 
 * **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
 * Comandi **`WASD`** per il movimento nelle quattro direzioni, non essendoci mesh da vedere il movimento non è verificabile a occhio nudo.
 
-#### Controlli Mouse Stage 02
-
 * Tenendo premuto il tasto sinistro del mouse e muovendolo si controlla la rotazione della telecamera.
 
-#### Controlli Tastiera Stage 03
+#### Controlli Stage 03
 
-* **`ESC`**: Chiude l'applicazione in modo sicuro e arresta immediatamente il loop di rendering.
-* Comandi **`WASD`** per il movimento nelle quattro direzioni, la telecamera può muoversi verso l'alto staccandosi dal suolo.
-
-#### Controlli Mouse Stage 03
-
-* Tenendo premuto il tasto sinistro del mouse e muovendolo si controlla la rotazione della telecamera.
+* I controlli rimangono invariati
 
 #### Controlli Stage 04
 
@@ -134,3 +127,7 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 #### Controlli Stage 08
 
 * **Specchio:** Consente di regolare scala e posizione dello specchio tramite ImGui, e anche la normale modificando il comportamento dello specchio stesso
+
+#### Controlli Stage 09
+
+* I controlli rimangono invariati
