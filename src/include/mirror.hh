@@ -4,7 +4,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
 
+#include "camera.hh"
+#include "lighting.hh"
 #include "mesh.hh"
+#include "scene.hh"
 
 class Mirror {
    public:
@@ -31,7 +34,7 @@ class Mirror {
     void update_mesh_transform() { mesh.position = position; }
 
     void render_scene_with_mirror(GLuint shader_program, Camera& camera, Scene& main_scene,
-                              Mirror& mirror, Light& scene_light, float aspect_ratio) {
+                                  Mirror& mirror, Light& scene_light, float aspect_ratio) {
         // ==========================================
         // FASE 1: Disegna la scena reale
         // ==========================================
@@ -107,7 +110,8 @@ class Mirror {
         // Imposta il piano di taglio in World Space. La normale dello specchio
         // punta verso la stanza, quindi taglierà tutto ciò che si trova "dietro".
         glm::vec4 clip_plane = glm::vec4(mirror.normal, -glm::dot(mirror.normal, mirror.position));
-        glUniform4fv(glGetUniformLocation(shader_program, "clip_plane"), 1, glm::value_ptr(clip_plane));
+        glUniform4fv(glGetUniformLocation(shader_program, "clip_plane"), 1,
+                     glm::value_ptr(clip_plane));
 
         // Attiva il taglio hardware
         glEnable(GL_CLIP_DISTANCE0);
@@ -120,7 +124,7 @@ class Mirror {
         glm::mat4 reflected_view = view * reflection_matrix;
         glm::mat4 reflected_vp = projection * reflected_view;
         glUniformMatrix4fv(glGetUniformLocation(shader_program, "vp"), 1, GL_FALSE,
-                        glm::value_ptr(reflected_vp));
+                           glm::value_ptr(reflected_vp));
 
         glFrontFace(GL_CW);
 
@@ -131,7 +135,8 @@ class Mirror {
 
         glm::vec3 orig_cam_pos = camera.position;
         glm::vec3 ref_cam_pos = glm::vec3(reflection_matrix * glm::vec4(orig_cam_pos, 1.0f));
-        glUniform3fv(glGetUniformLocation(shader_program, "cam_pos"), 1, glm::value_ptr(ref_cam_pos));
+        glUniform3fv(glGetUniformLocation(shader_program, "cam_pos"), 1,
+                     glm::value_ptr(ref_cam_pos));
 
         // Quando la scena viene disegnata, gli oggetti reali che si trovano
         // fisicamente "oltre" il vetro verranno automaticamente eliminati dalla GPU!
@@ -148,6 +153,7 @@ class Mirror {
 
         scene_light.vec3_uniforms["light.direct_pos"] = orig_light_pos;
         scene_light.push_to_shader(shader_program);
-        glUniform3fv(glGetUniformLocation(shader_program, "cam_pos"), 1, glm::value_ptr(orig_cam_pos));
+        glUniform3fv(glGetUniformLocation(shader_program, "cam_pos"), 1,
+                     glm::value_ptr(orig_cam_pos));
     }
 };
