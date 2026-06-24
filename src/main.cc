@@ -250,7 +250,8 @@ void render_scene_with_mirror(GLuint shader_program, Camera& camera, Scene& main
 
     glCullFace(GL_BACK);  // Torniamo a guardare il fronte dello specchio
 
-    // Disegniamo fisicamente un rettangolo nero solido sul fronte dello specchio che verrà poi sostituito dall'immagine da specchiare.
+    // Disegniamo fisicamente un rettangolo nero solido sul fronte dello specchio che verrà poi
+    // sostituito dall'immagine da specchiare.
     glm::mat3 mirror_normal_front = glm::transpose(glm::inverse(glm::mat3(mirror_model)));
     glUniformMatrix3fv(normal_mat_loc, 1, GL_FALSE, glm::value_ptr(mirror_normal_front));
 
