@@ -13,7 +13,7 @@ enum class CameraMovement { FORWARD, BACKWARD, LEFT, RIGHT };
 
 class Camera {
    public:
-    // --- Proprietà camera ---
+    // --- Proprietà della camera ---
     glm::vec3 cam_pos{0.0f, 0.0f, 3.0f};
     glm::mat4 vp;
     GLint cam_pos_loc;
@@ -41,7 +41,7 @@ class Camera {
         update_camera_vectors();
     }
 
-    // --- Matrici ---
+    // --- Generazione matrici ---
     [[nodiscard]] glm::mat4 get_view_matrix() const {
         return glm::lookAt(cam_pos, cam_pos + front, up);
     }
@@ -51,7 +51,7 @@ class Camera {
     }
 
     // --- Gestione Shader ---
-    // In camera.hh, sostituisci la funzione push_to_shader con questa:
+    // Invio dei parametri della camera allo shader
     void push_to_shader(float aspect_ratio) {
         glm::mat4 view = get_view_matrix();
         glm::mat4 projection = get_projection_matrix(aspect_ratio);
@@ -61,7 +61,7 @@ class Camera {
         glUniform3fv(cam_pos_loc, 1, glm::value_ptr(cam_pos));
     }
 
-    // --- Gestione Input ---
+    // --- Gestione input esterno ---
     void process_keyboard(CameraMovement direction, float delta_time) {
         float velocity = movement_speed * delta_time;
         if (direction == CameraMovement::FORWARD) cam_pos += front * velocity;

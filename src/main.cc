@@ -26,7 +26,7 @@
 #include "include/mouse.hh"
 #include "include/scene.hh"
 
-// --- Setup function ---
+// --- Configurazione iniziale della finestra e del contesto OpenGL ---
 sf::Window setup() {
     int window_width = 1024;
     int window_height = 768;
@@ -65,7 +65,7 @@ sf::Window setup() {
     return window;
 }
 
-// --- Polling Eventi OS ---
+// --- Gestione degli eventi del sistema operativo e dell'input ---
 void handle_events(sf::Window& window, bool& running, Camera& camera, float dt, Mouse& mouse,
                    bool& wantImGui) {
     static sf::Vector2i last_pos;
@@ -135,7 +135,7 @@ int main() {
     scene.add_mesh(&corner);
     scene.add_mesh(&bunny);
 
-    Mirror mirror(shaders.program, "resources/meshes/mirror.off", glm::vec3(0.0f, 1.0f, -3.0f),
+    Mirror mirror(shaders.program, "resources/meshes/mirror.off", glm::vec3(0.0f, 0.8f, -3.0f),
                   glm::vec3(0.0f, 0.0f, 1.0f));
     mirror.mesh.scale = glm::vec3(3.0f);
 

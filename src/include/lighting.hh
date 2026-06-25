@@ -12,7 +12,7 @@
 
 class Light {
    public:
-    // --- proprietà Uniform ---
+    // --- Proprietà uniform ---
     glm::vec3 direct_pos;
     glm::vec3 direct_val;
     glm::vec3 ambient_val;
@@ -21,7 +21,7 @@ class Light {
     GLint ambient_val_loc;
 
     Light(GLuint program) {
-        // Valori iniziali Luce
+        // Impostazione dei valori iniziali della luce
         direct_pos = glm::vec3(0.0f, 1.5f, 0.0f);
         direct_val = glm::vec3(1.0f, 1.0f, 1.0f);
         ambient_val = glm::vec3(0.2f, 0.2f, 0.2f);

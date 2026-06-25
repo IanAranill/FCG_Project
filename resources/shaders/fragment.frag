@@ -7,7 +7,7 @@ out vec4 fragment_color;
 
 uniform vec3 cam_pos;
 
-// Material properties
+// Proprietà del materiale
 struct Material {
     vec3 ambient;
     vec3 diffuse;
@@ -16,7 +16,7 @@ struct Material {
 };
 uniform Material material;
 
-// Lighting properties
+// Proprietà della luce
 struct Light {
     vec3 direct_pos;
     vec3 direct_val;
@@ -25,21 +25,19 @@ struct Light {
 uniform Light light;
 
 void main() {
-    // return the interpolated color for the fragment
-
     vec3 L = normalize(light.direct_pos - post_vertex_position);
     vec3 V = normalize(cam_pos - post_vertex_position);
     vec3 H = normalize(L + V);
     vec3 N = normalize(post_vertex_norm);
 
-    // Ambient Light calc
+    // Calcolo della componente ambientale della luce
     vec3 ambient_light = material.ambient * light.ambient_val;
 
-    // Diffuse Light calc
+    // Calcolo della componente diffusa della luce
     float diff_factor = max(0.0, dot(N, L));
     vec3 diffuse_light = material.diffuse * light.direct_val * diff_factor;
 
-    // Specular Light calc
+    // Calcolo della componente speculare della luce
     float spec_factor = pow(max(0.0, dot(N, H)), material.shininess);
     if (diff_factor <= 0.0) {
         spec_factor = 0.0;
@@ -48,5 +46,6 @@ void main() {
 
     vec3 tot_light = ambient_light + diffuse_light + specular_light;
 
+    // Calcolo e restituzione del colore interpolato per il frammento
     fragment_color = vec4(clamp(tot_light, 0.f, 1.f), 1.0);
 }

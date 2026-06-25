@@ -41,8 +41,10 @@ class Mirror {
     void render_scene_with_mirror(GLuint shader_program, Camera& camera, Scene& main_scene,
                                   Mirror& mirror, Light& scene_light, float aspect_ratio) {
         // ==========================================
-        // FASE 1: Disegna la scena reale
+        // FASE 1: Disegno della Scena Reale
         // ==========================================
+        // Disabilitazione dello Stencil Test e abilitazione della scrittura su Color e Depth
+        // Buffer. Impostazione del Culling standard per nascondere le facce posteriori.
         glDisable(GL_STENCIL_TEST);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glDepthMask(GL_TRUE);
@@ -51,20 +53,20 @@ class Mirror {
         camera.push_to_shader(aspect_ratio);
         scene_light.push_to_shader();
 
-        // Disegna Stanza e Coniglio
         main_scene.draw();
 
         // ==========================================
-        // FASE 2: Disegna il Retro dello Specchio
+        // FASE 2: Rendering del Retro dello Specchio
         // ==========================================
-        // Inverte il Culling per vedere SOLO la faccia posteriore dello specchio
+        // Inversione del Culling per renderizzare esclusivamente la faccia posteriore dello
+        // specchio.
         glCullFace(GL_FRONT);
 
         glm::vec3 orig_diff = mirror.mesh.material_diffuse;
         glm::vec3 orig_amb = mirror.mesh.material_ambient;
         glm::vec3 orig_spec = mirror.mesh.material_specular;
 
-        // Crea un materiale scuro per il "corpo" dello specchio
+        // Applicazione di un materiale scuro per modellare la scocca fisica.
         mirror.mesh.material_diffuse = glm::vec3(0.05f, 0.05f, 0.05f);
         mirror.mesh.material_ambient = glm::vec3(0.02f, 0.02f, 0.02f);
         mirror.mesh.material_specular = glm::vec3(0.01f, 0.01f, 0.01f);
@@ -79,48 +81,69 @@ class Mirror {
         glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(mirror_model));
         glUniformMatrix3fv(normal_mat_loc, 1, GL_FALSE, glm::value_ptr(mirror_normal_back));
 
-        // Disegnia la faccia posteriore (se visibile)
         mirror.mesh.draw();
 
         // ==========================================
-        // FASE 3: Tela Scura e Maschera Stencil (Fronte dello Specchio)
+        // FASE 3: Mappatura Stencil (Vetro = 1, Bordo = 2) e Creazione Tela Scura
         // ==========================================
         glEnable(GL_STENCIL_TEST);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilMask(0xFF);
+        glCullFace(GL_BACK);
 
-        glCullFace(GL_BACK);  // Torna a guardare il fronte dello specchio
+        glm::vec3 orig_scale = mirror.mesh.scale;
 
-        // Disegna fisicamente un rettangolo nero solido sul fronte dello specchio che verrà poi
-        // sostituito dall'immagine da specchiare.
-        glm::mat3 mirror_normal_front = glm::transpose(glm::inverse(glm::mat3(mirror_model)));
-        glUniformMatrix3fv(normal_mat_loc, 1, GL_FALSE, glm::value_ptr(mirror_normal_front));
+        // --- Step A: Tracciamento dell'ID 2 (Bordo esterno) in modo invisibile ---
+        // Disabilitazione della scrittura dei colori e della profondità. Tracciamento dell'ingombro
+        // totale mascherato con ID 2.
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glDepthMask(GL_FALSE);
+
+        glStencilFunc(GL_ALWAYS, 2, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+        mirror.mesh.scale = orig_scale * 1.05f;
+        glm::mat4 border_model_matrix = mirror.mesh.get_model_matrix();
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(border_model_matrix));
+        mirror.mesh.draw();
+
+        // --- Step B: Tracciamento dell'ID 1 (Vetro interno) e creazione della tela scura ---
+        // Ripristino della scrittura di colore e profondità.
+        // Sovrascrittura della parte centrale dello stencil con l'ID 1 e applicazione di un
+        // materiale scuro per occludere la stanza retrostante.
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glDepthMask(GL_TRUE);
+
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+        mirror.mesh.material_diffuse = glm::vec3(0.05f, 0.05f, 0.05f);
+        mirror.mesh.material_ambient = glm::vec3(0.02f, 0.02f, 0.02f);
+        mirror.mesh.material_specular = glm::vec3(0.01f, 0.01f, 0.01f);
+        mirror.mesh.push_material_to_shader();
+
+        mirror.mesh.scale = orig_scale;
+        glm::mat4 glass_model_matrix = mirror.mesh.get_model_matrix();
+        glm::mat3 glass_normal_matrix = glm::transpose(glm::inverse(glm::mat3(glass_model_matrix)));
+
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(glass_model_matrix));
+        glUniformMatrix3fv(normal_mat_loc, 1, GL_FALSE, glm::value_ptr(glass_normal_matrix));
 
         mirror.mesh.draw();
 
-        // Ripristiniamo il materiale originale per ImGui
-        mirror.mesh.material_diffuse = orig_diff;
-        mirror.mesh.material_ambient = orig_amb;
-        mirror.mesh.material_specular = orig_spec;
-
         // ==========================================
-        // FASE 4: Scena Riflessa (con Hardware Clipping)
+        // FASE 4: Rendering della Scena Riflessa
         // ==========================================
+        // Limitazione del rendering esclusivamente all'area mascherata con ID 1.
         glStencilFunc(GL_EQUAL, 1, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        // --- CALCOLO DEL PIANO DI TAGLIO ---
-        // Imposta il piano di taglio in World Space. La normale dello specchio
-        // punta verso la stanza, quindi taglierà tutto ciò che si trova "dietro".
+        // Attivazione dell'Hardware Clipping Plane per tagliare la geometria oltre lo specchio.
         clip_plane = glm::vec4(mirror.normal, -glm::dot(mirror.normal, mirror.position));
         glUniform4fv(clip_plane_loc, 1, glm::value_ptr(clip_plane));
-
-        // Attiva il taglio hardware
         glEnable(GL_CLIP_DISTANCE0);
 
-        // Setup della Seconda Camera
+        // Modifica dei parametri della telecamera in base alla matrice di riflessione.
         glm::mat4 reflection_matrix = mirror.get_reflection_matrix();
         glm::mat4 view = camera.get_view_matrix();
         glm::mat4 projection = camera.get_projection_matrix(aspect_ratio);
@@ -132,25 +155,48 @@ class Mirror {
         glFrontFace(GL_CW);
 
         glm::vec3 orig_light_pos = scene_light.direct_pos;
-        glm::vec3 ref_light_pos = glm::vec3(reflection_matrix * glm::vec4(orig_light_pos, 1.0f));
-        scene_light.direct_pos = ref_light_pos;
+        scene_light.direct_pos = glm::vec3(reflection_matrix * glm::vec4(orig_light_pos, 1.0f));
         scene_light.push_to_shader();
 
         glm::vec3 orig_cam_pos = camera.cam_pos;
-        glm::vec3 ref_cam_pos = glm::vec3(reflection_matrix * glm::vec4(orig_cam_pos, 1.0f));
-        glUniform3fv(camera.cam_pos_loc, 1, glm::value_ptr(ref_cam_pos));
+        glUniform3fv(camera.cam_pos_loc, 1,
+                     glm::value_ptr(glm::vec3(reflection_matrix * glm::vec4(orig_cam_pos, 1.0f))));
 
-        // Quando la scena viene disegnata, gli oggetti reali che si trovano
-        // fisicamente "oltre" il vetro verranno automaticamente eliminati dalla GPU!
         main_scene.draw();
 
         // ==========================================
-        // FASE 5: Ripristino Finale
+        // FASE 5: Rendering del Bordo Esterno
         // ==========================================
-        // Disattiva il piano di taglio per rimettere a posto la telecamera!
         glDisable(GL_CLIP_DISTANCE0);
-
         glFrontFace(GL_CCW);
+
+        // Limitazione del rendering esclusivamente all'area mascherata con ID 2.
+        glStencilFunc(GL_EQUAL, 2, 0xFF);
+
+        // Applicazione di un materiale nero sulla mesh scalata per generare la cornice.
+        mirror.mesh.material_diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
+        mirror.mesh.material_ambient = glm::vec3(0.0f, 0.0f, 0.0f);
+        mirror.mesh.material_specular = glm::vec3(0.0f, 0.0f, 0.0f);
+        mirror.mesh.push_material_to_shader();
+
+        mirror.mesh.scale = orig_scale * 1.05f;
+        glm::mat4 final_border_model = mirror.mesh.get_model_matrix();
+        glm::mat3 final_border_normal = glm::transpose(glm::inverse(glm::mat3(final_border_model)));
+
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(final_border_model));
+        glUniformMatrix3fv(normal_mat_loc, 1, GL_FALSE, glm::value_ptr(final_border_normal));
+
+        mirror.mesh.draw();
+
+        // ==========================================
+        // FASE 6: Ripristino Finale Globale
+        // ==========================================
+        // Ripristino dei materiali originali e pulizia della macchina a stati di OpenGL.
+        mirror.mesh.scale = orig_scale;
+        mirror.mesh.material_diffuse = orig_diff;
+        mirror.mesh.material_ambient = orig_amb;
+        mirror.mesh.material_specular = orig_spec;
+
         glDisable(GL_STENCIL_TEST);
 
         scene_light.direct_pos = orig_light_pos;

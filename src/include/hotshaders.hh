@@ -12,21 +12,21 @@
 
 class Shaders {
    public:
-    // Cache per memorizzare le posizioni delle variabili uniform
+    // Cache per la memorizzazione delle posizioni delle variabili uniform
     GLuint program{0};
 
     Shaders(const std::string& vertexPath, const std::string& fragmentPath) {
         reload(vertexPath, fragmentPath);
     }
 
-    // Distruttore: pulisce la memoria GPU
+    // Distruzione dell'oggetto e deallocazione del programma dalla memoria GPU
     ~Shaders() {
         if (program != 0) {
             glDeleteProgram(program);
         }
     }
 
-    // Evita copie accidentali che causerebbero "double-free" sulla GPU
+    // Disabilitazione delle operazioni di copia per prevenire double-free sulla GPU
     Shaders(const Shaders&) = delete;
     Shaders& operator=(const Shaders&) = delete;
 

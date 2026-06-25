@@ -91,7 +91,8 @@ class ImguiWrap {
                               1.0f);
 
             mirror.normal = glm::normalize(mirror.normal);
-            mirror.update_mesh_transform();  // Aggiorna sia il vetro che il frame
+            mirror.update_mesh_transform();  // Aggiornamento della trasformazione per il vetro e la
+                                             // cornice
         }
         ImGui::End();
 

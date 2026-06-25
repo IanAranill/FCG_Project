@@ -16,7 +16,7 @@
 #include "../glad/gl.h"
 #endif
 
-// --- Definizione Vertice ---
+// --- Struttura dati vertice ---
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
@@ -27,10 +27,10 @@ class Mesh {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
-    // --- Risorse OpenGL ---
+    // --- Identificatori risorse OpenGL ---
     GLuint VAO{0}, VBO{0}, EBO{0};
 
-    // --- Trasformazioni Affini ---
+    // --- Parametri di trasformazione affine ---
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale = glm::vec3(1.0f);
@@ -44,7 +44,7 @@ class Mesh {
     GLint material_ambient_loc;
     GLint material_shininess_loc;
 
-    // --- Ciclo di Vita e Memory Management ---
+    // --- Ciclo di vita e gestione della memoria ---
     Mesh() = default;
 
     Mesh(GLuint program, const std::string& filename, bool smooth_normals = true) {
@@ -61,13 +61,13 @@ class Mesh {
             compute_flat_normals();
         }
 
-        // Valori iniziali Materiale
+        // Inizializzazione parametri del materiale
         material_diffuse = glm::vec3(0.1f, 0.7f, 0.8f);
         material_specular = glm::vec3(0.5f, 0.5f, 0.5f);
         material_ambient = glm::vec3(0.1f, 0.7f, 0.8f);
         material_shininess = 64.0f;
 
-        // Loc cache
+        // Memorizzazione (caching) delle location Uniform per l'ottimizzazione delle chiamate GPU
         material_diffuse_loc = glGetUniformLocation(program, "material.diffuse");
         material_specular_loc = glGetUniformLocation(program, "material.specular");
         material_ambient_loc = glGetUniformLocation(program, "material.ambient");
@@ -86,7 +86,7 @@ class Mesh {
     Mesh(const Mesh&) = delete;
     Mesh& operator=(const Mesh&) = delete;
 
-    // --- Interfaccia Rendering ---
+    // --- Funzioni di interfaccia rendering ---
     [[nodiscard]] glm::mat4 get_model_matrix() const {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, position);
@@ -117,7 +117,7 @@ class Mesh {
     std::vector<glm::vec3> temp_normals;
     std::vector<unsigned int> temp_indices;
 
-    // --- I/O File System ---
+    // --- Funzioni I/O file system ---
     bool load_off(const std::string& filename) {
         std::ifstream file(filename);
         if (!file.is_open()) return false;
@@ -161,7 +161,7 @@ class Mesh {
         return true;
     }
 
-    // --- Pipeline Geometria ---
+    // --- Pipeline elaborazione geometria ---
     void normalize_mesh() {
         if (temp_positions.empty()) return;
 
@@ -184,7 +184,7 @@ class Mesh {
         }
     }
 
-    // --- Pipeline Normali ---
+    // --- Pipeline calcolo normali ---
     void compute_smooth_normals() {
         temp_normals.assign(temp_positions.size(), glm::vec3(0.0f));
 
@@ -247,7 +247,7 @@ class Mesh {
         temp_indices = std::move(new_indices);
     }
 
-    // --- Pipeline Memoria Video ---
+    // --- Pipeline elaborazione memoria video ---
     void build_vertices() {
         vertices.reserve(temp_positions.size());
         for (size_t i = 0; i < temp_positions.size(); ++i) {

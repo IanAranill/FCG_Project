@@ -22,7 +22,8 @@ class Mouse {
 #ifdef __APPLE__
 
     void event(const sf::Event::MouseMovedRaw& /* event */) {
-        // No-op: on macOS deltas are polled inside consumeDelta(), not fed from events.
+        // Nessuna operazione: su macOS i delta vengono letti all'interno di consumeDelta(), non
+        // tramite eventi.
     }
 
     sf::Vector2f delta() {
@@ -30,11 +31,9 @@ class Mouse {
         int32_t dy = 0;
         CGGetLastMouseDelta(&dx, &dy);
 
-        // First-call quirk: CGGetLastMouseDelta reports the
-        // displacement between the mouse position at program
-        // launch and the current position on its very first
-        // invocation. We discard that value and return zero to
-        // prevent a violent camera jump at startup.
+        // Risoluzione anomalia prima chiamata: CGGetLastMouseDelta riporta lo spostamento
+        // rispetto alla posizione iniziale all'avvio. Il valore viene scartato per prevenire
+        // salti improvvisi della telecamera nel primo frame.
         if (first_call) {
             first_call = false;
             return sf::Vector2f{0.f, 0.f};
