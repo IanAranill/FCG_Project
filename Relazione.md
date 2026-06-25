@@ -127,6 +127,11 @@ Il risultato è un taglio netto e geometricamente perfetto, che risolve l'artefa
 
 ![Specchio con taglio funzionante](resources/screenshots/stage09.png)
 
+#### Stage 10:
+
+* In questa fase, l'architettura del motore grafico è stata revisionata per garantire la totale sicurezza della memoria (Memory Safety) secondo il paradigma RAII. L'intervento principale ha riguardato la classe Shaders, dove è stato implementato un distruttore per deallocare automaticamente il programma grafico dalla VRAM (glDeleteProgram), prevenendo così pericolosi resource leak al termine dell'esecuzione. Parallelamente, per evitare corruzioni di memoria e crash dovuti a double-free della stessa risorsa GPU, è stata bloccata la possibilità di copiare accidentalmente la classe (= delete su costruttore di copia e assegnazione).
+* Il secondo grande intervento si è concentrato sull'abbattimento dell'overhead sulla CPU durante il render loop. Nelle versioni precedenti, le funzioni di aggiornamento come push_to_shader e draw richiamavano glGetUniformLocation ad ogni frame, costringendo il driver OpenGL a costose ricerche testuali continue, questa dipendenza è stata totalmente rimossa dal ciclo principale: la risoluzione degli indirizzi di memoria (es. material_diffuse_loc, vp_loc) avviene ora una tantum all'interno dei costruttori. Salvando questi indici interi direttamente come proprietà delle classi, i dati vengono inviati alla scheda video in maniera diretta e istantanea, massimizzando il framerate e garantendo prestazioni stabili anche con passaggi di rendering multipli per i riflessi
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
