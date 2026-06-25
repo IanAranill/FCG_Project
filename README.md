@@ -135,3 +135,7 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 #### Controlli Stage 10
 
 * I controlli rimangono invariati
+
+#### Controlli Stage 11
+
+* **Rotazione** Possibile ruotare su tutti e tre gli assi tutte le mesh presenti (stanza, coniglio e specchio) tramite Impostazioni
