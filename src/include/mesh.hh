@@ -35,13 +35,19 @@ class Mesh {
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale = glm::vec3(1.0f);
 
-    std::unordered_map<std::string, glm::vec3> vec3_uniforms;
-    std::unordered_map<std::string, float> float_uniforms;
+    glm::vec3 material_diffuse;
+    glm::vec3 material_specular;
+    glm::vec3 material_ambient;
+    float material_shininess;
+    GLint material_diffuse_loc;
+    GLint material_specular_loc;
+    GLint material_ambient_loc;
+    GLint material_shininess_loc;
 
     // --- Ciclo di Vita e Memory Management ---
     Mesh() = default;
 
-    Mesh(const std::string& filename, bool smooth_normals = true) {
+    Mesh(GLuint program, const std::string& filename, bool smooth_normals = true) {
         if (!load_off(filename)) {
             std::cerr << ">>> [ERRORE CRITICO MESH] Impossibile caricare: " << filename << "\n";
             return;
@@ -56,11 +62,16 @@ class Mesh {
         }
 
         // Valori iniziali Materiale
-        vec3_uniforms["material.diffuse"] = glm::vec3(0.1f, 0.7f, 0.8f);
-        vec3_uniforms["material.specular"] = glm::vec3(0.5f, 0.5f, 0.5f);
-        vec3_uniforms["material.ambient"] = glm::vec3(0.1f, 0.7f, 0.8f);
+        material_diffuse = glm::vec3(0.1f, 0.7f, 0.8f);
+        material_specular = glm::vec3(0.5f, 0.5f, 0.5f);
+        material_ambient = glm::vec3(0.1f, 0.7f, 0.8f);
+        material_shininess = 64.0f;
 
-        float_uniforms["material.shininess"] = 64.0f;
+        // Loc cache
+        material_diffuse_loc = glGetUniformLocation(program, "material.diffuse");
+        material_specular_loc = glGetUniformLocation(program, "material.specular");
+        material_ambient_loc = glGetUniformLocation(program, "material.ambient");
+        material_shininess_loc = glGetUniformLocation(program, "material.shininess");
 
         build_vertices();
         setup_gl_resources();
@@ -93,14 +104,12 @@ class Mesh {
         glBindVertexArray(0);
     }
 
-    void push_material_to_shader(GLuint program) const {
-        for (const auto& [name, value] : vec3_uniforms) {
-            glUniform3fv(glGetUniformLocation(program, name.c_str()), 1, glm::value_ptr(value));
-        }
+    void push_material_to_shader() const {
+        glUniform3fv(material_diffuse_loc, 1, glm::value_ptr(material_diffuse));
+        glUniform3fv(material_specular_loc, 1, glm::value_ptr(material_specular));
+        glUniform3fv(material_ambient_loc, 1, glm::value_ptr(material_ambient));
 
-        for (const auto& [name, value] : float_uniforms) {
-            glUniform1f(glGetUniformLocation(program, name.c_str()), value);
-        }
+        glUniform1f(material_shininess_loc, material_shininess);
     }
 
    private:

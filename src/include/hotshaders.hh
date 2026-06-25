@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #ifndef GLAD_GL
 #define GLAD_GL
@@ -11,12 +12,23 @@
 
 class Shaders {
    public:
-    GLuint program;
+    // Cache per memorizzare le posizioni delle variabili uniform
+    GLuint program{0};
 
     Shaders(const std::string& vertexPath, const std::string& fragmentPath) {
-        program = 0;
         reload(vertexPath, fragmentPath);
     }
+
+    // Distruttore: pulisce la memoria GPU
+    ~Shaders() {
+        if (program != 0) {
+            glDeleteProgram(program);
+        }
+    }
+
+    // Evita copie accidentali che causerebbero "double-free" sulla GPU
+    Shaders(const Shaders&) = delete;
+    Shaders& operator=(const Shaders&) = delete;
 
     void use() const {
         if (program != 0) {

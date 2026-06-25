@@ -37,26 +37,20 @@ class ImguiWrap {
 
         ImGui::Begin("Impostazioni");
         if (ImGui::CollapsingHeader("Luce")) {
-            ImGui::DragFloat3("Posizione luce",
-                              glm::value_ptr(scene_light.vec3_uniforms["light.direct_pos"]), 0.1f);
-            ImGui::ColorEdit3("Colore luce",
-                              glm::value_ptr(scene_light.vec3_uniforms["light.direct_val"]));
+            ImGui::DragFloat3("Posizione luce", glm::value_ptr(scene_light.direct_pos), 0.1f);
+            ImGui::ColorEdit3("Colore luce", glm::value_ptr(scene_light.direct_val));
 
-            ImGui::ColorEdit3("Colore luce ambientale",
-                              glm::value_ptr(scene_light.vec3_uniforms["light.ambient_val"]));
+            ImGui::ColorEdit3("Colore luce ambientale", glm::value_ptr(scene_light.ambient_val));
         }
 
         if (ImGui::CollapsingHeader("Bunny")) {
-            ImGui::DragFloat3("Ambiente bunny",
-                              glm::value_ptr(bunny.vec3_uniforms["material.ambient"]), 0.01f, 0.0f,
+            ImGui::DragFloat3("Ambiente bunny", glm::value_ptr(bunny.material_ambient), 0.01f, 0.0f,
                               1.0f);
-            ImGui::DragFloat3("Diffuso bunny",
-                              glm::value_ptr(bunny.vec3_uniforms["material.diffuse"]), 0.01f, 0.0f,
+            ImGui::DragFloat3("Diffuso bunny", glm::value_ptr(bunny.material_diffuse), 0.01f, 0.0f,
                               1.0f);
-            ImGui::DragFloat3("Speculare bunny",
-                              glm::value_ptr(bunny.vec3_uniforms["material.specular"]), 0.01f, 0.0f,
-                              1.0f);
-            ImGui::DragFloat("Shininess bunny", &bunny.float_uniforms["material.shininess"], 0.1f);
+            ImGui::DragFloat3("Speculare bunny", glm::value_ptr(bunny.material_specular), 0.01f,
+                              0.0f, 1.0f);
+            ImGui::DragFloat("Shininess bunny", &bunny.material_shininess, 0.1f);
             ImGui::DragFloat3("Posizione bunny", glm::value_ptr(bunny.position), 0.1f);
             float uniform_scale = bunny.scale.x;
             if (ImGui::DragFloat("Scala bunny", &uniform_scale, 0.1f)) {
@@ -65,17 +59,13 @@ class ImguiWrap {
         }
 
         if (ImGui::CollapsingHeader("Stanza")) {
-            ImGui::DragFloat3("Ambiente stanza",
-                              glm::value_ptr(corner.vec3_uniforms["material.ambient"]), 0.01f, 0.0f,
-                              1.0f);
-            ImGui::DragFloat3("Diffuso stanza",
-                              glm::value_ptr(corner.vec3_uniforms["material.diffuse"]), 0.01f, 0.0f,
-                              1.0f);
-            ImGui::DragFloat3("Speculare stanza",
-                              glm::value_ptr(corner.vec3_uniforms["material.specular"]), 0.01f,
+            ImGui::DragFloat3("Ambiente stanza", glm::value_ptr(corner.material_ambient), 0.01f,
                               0.0f, 1.0f);
-            ImGui::DragFloat("Shininess stanza", &corner.float_uniforms["material.shininess"],
-                             0.1f);
+            ImGui::DragFloat3("Diffuso stanza", glm::value_ptr(corner.material_diffuse), 0.01f,
+                              0.0f, 1.0f);
+            ImGui::DragFloat3("Speculare stanza", glm::value_ptr(corner.material_specular), 0.01f,
+                              0.0f, 1.0f);
+            ImGui::DragFloat("Shininess stanza", &corner.material_shininess, 0.1f);
             ImGui::DragFloat3("Posizione stanza", glm::value_ptr(corner.position), 0.1f);
 
             float uniform_scale = corner.scale.x;

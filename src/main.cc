@@ -119,15 +119,15 @@ int main() {
     }
 
     Shaders shaders("resources/shaders/vertex.vert", "resources/shaders/fragment.frag");
-    Camera camera(glm::vec3(0.0f, 1.0f, 5.0f));
-    Light scene_light;
+    Camera camera(shaders.program, glm::vec3(0.0f, 1.0f, 5.0f));
+    Light scene_light(shaders.program);
     Mouse mouse;
 
-    Mesh corner("resources/meshes/corner.off", false);
+    Mesh corner(shaders.program, "resources/meshes/corner.off", false);
     corner.position = glm::vec3(0.0f, -1.0f, 0.0f);
     corner.scale = glm::vec3(25.0f);
 
-    Mesh bunny("resources/meshes/bunny.off", true);
+    Mesh bunny(shaders.program, "resources/meshes/bunny.off", true);
     bunny.position = glm::vec3(0.0f, 0.0f, 0.0f);
     bunny.scale = glm::vec3(1.5f);
 
@@ -135,7 +135,7 @@ int main() {
     scene.add_mesh(&corner);
     scene.add_mesh(&bunny);
 
-    Mirror mirror("resources/meshes/mirror.off", glm::vec3(0.0f, 1.0f, -3.0f),
+    Mirror mirror(shaders.program, "resources/meshes/mirror.off", glm::vec3(0.0f, 1.0f, -3.0f),
                   glm::vec3(0.0f, 0.0f, 1.0f));
     mirror.mesh.scale = glm::vec3(3.0f);
 
@@ -164,8 +164,8 @@ int main() {
         }
 
         shaders.use();
-        camera.push_to_shader(shaders.program, aspect_ratio);
-        scene_light.push_to_shader(shaders.program);
+        camera.push_to_shader(aspect_ratio);
+        scene_light.push_to_shader();
 
         mirror.render_scene_with_mirror(shaders.program, camera, scene, mirror, scene_light,
                                         aspect_ratio);

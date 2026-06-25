@@ -10,14 +10,19 @@
 #include "scene.hh"
 
 class Mirror {
+   private:
+    glm::vec4 clip_plane;
+    GLint clip_plane_loc;
+
    public:
     Mesh mesh;
     glm::vec3 position;
     glm::vec3 normal;
 
-    Mirror(const std::string& mesh_path, glm::vec3 pos, glm::vec3 norm)
-        : mesh(mesh_path, false), position(pos), normal(glm::normalize(norm)) {
+    Mirror(GLuint program, const std::string& mesh_path, glm::vec3 pos, glm::vec3 norm)
+        : mesh(program, mesh_path, false), position(pos), normal(glm::normalize(norm)) {
         mesh.position = pos;
+        clip_plane_loc = glGetUniformLocation(program, "clip_plane");
     }
 
     glm::mat4 get_reflection_matrix() const {
@@ -43,8 +48,8 @@ class Mirror {
         glDepthMask(GL_TRUE);
         glCullFace(GL_BACK);
 
-        camera.push_to_shader(shader_program, aspect_ratio);
-        scene_light.push_to_shader(shader_program);
+        camera.push_to_shader(aspect_ratio);
+        scene_light.push_to_shader();
 
         // Disegna Stanza e Coniglio
         main_scene.draw(shader_program);
@@ -55,15 +60,15 @@ class Mirror {
         // Inverte il Culling per vedere SOLO la faccia posteriore dello specchio
         glCullFace(GL_FRONT);
 
-        glm::vec3 orig_diff = mirror.mesh.vec3_uniforms["material.diffuse"];
-        glm::vec3 orig_amb = mirror.mesh.vec3_uniforms["material.ambient"];
-        glm::vec3 orig_spec = mirror.mesh.vec3_uniforms["material.specular"];
+        glm::vec3 orig_diff = mirror.mesh.material_diffuse;
+        glm::vec3 orig_amb = mirror.mesh.material_ambient;
+        glm::vec3 orig_spec = mirror.mesh.material_specular;
 
         // Crea un materiale scuro per il "corpo" dello specchio
-        mirror.mesh.vec3_uniforms["material.diffuse"] = glm::vec3(0.05f, 0.05f, 0.05f);
-        mirror.mesh.vec3_uniforms["material.ambient"] = glm::vec3(0.02f, 0.02f, 0.02f);
-        mirror.mesh.vec3_uniforms["material.specular"] = glm::vec3(0.01f, 0.01f, 0.01f);
-        mirror.mesh.push_material_to_shader(shader_program);
+        mirror.mesh.material_diffuse = glm::vec3(0.05f, 0.05f, 0.05f);
+        mirror.mesh.material_ambient = glm::vec3(0.02f, 0.02f, 0.02f);
+        mirror.mesh.material_specular = glm::vec3(0.01f, 0.01f, 0.01f);
+        mirror.mesh.push_material_to_shader();
 
         GLint model_loc = glGetUniformLocation(shader_program, "model");
         GLint normal_mat_loc = glGetUniformLocation(shader_program, "normal_matrix");
@@ -95,9 +100,9 @@ class Mirror {
         mirror.mesh.draw();
 
         // Ripristiniamo il materiale originale per ImGui
-        mirror.mesh.vec3_uniforms["material.diffuse"] = orig_diff;
-        mirror.mesh.vec3_uniforms["material.ambient"] = orig_amb;
-        mirror.mesh.vec3_uniforms["material.specular"] = orig_spec;
+        mirror.mesh.material_diffuse = orig_diff;
+        mirror.mesh.material_ambient = orig_amb;
+        mirror.mesh.material_specular = orig_spec;
 
         // ==========================================
         // FASE 4: Scena Riflessa (con Hardware Clipping)
@@ -109,9 +114,8 @@ class Mirror {
         // --- CALCOLO DEL PIANO DI TAGLIO ---
         // Imposta il piano di taglio in World Space. La normale dello specchio
         // punta verso la stanza, quindi taglierà tutto ciò che si trova "dietro".
-        glm::vec4 clip_plane = glm::vec4(mirror.normal, -glm::dot(mirror.normal, mirror.position));
-        glUniform4fv(glGetUniformLocation(shader_program, "clip_plane"), 1,
-                     glm::value_ptr(clip_plane));
+        clip_plane = glm::vec4(mirror.normal, -glm::dot(mirror.normal, mirror.position));
+        glUniform4fv(clip_plane_loc, 1, glm::value_ptr(clip_plane));
 
         // Attiva il taglio hardware
         glEnable(GL_CLIP_DISTANCE0);
@@ -123,20 +127,18 @@ class Mirror {
 
         glm::mat4 reflected_view = view * reflection_matrix;
         glm::mat4 reflected_vp = projection * reflected_view;
-        glUniformMatrix4fv(glGetUniformLocation(shader_program, "vp"), 1, GL_FALSE,
-                           glm::value_ptr(reflected_vp));
+        glUniformMatrix4fv(camera.vp_loc, 1, GL_FALSE, glm::value_ptr(reflected_vp));
 
         glFrontFace(GL_CW);
 
-        glm::vec3 orig_light_pos = scene_light.vec3_uniforms["light.direct_pos"];
+        glm::vec3 orig_light_pos = scene_light.direct_pos;
         glm::vec3 ref_light_pos = glm::vec3(reflection_matrix * glm::vec4(orig_light_pos, 1.0f));
-        scene_light.vec3_uniforms["light.direct_pos"] = ref_light_pos;
-        scene_light.push_to_shader(shader_program);
+        scene_light.direct_pos = ref_light_pos;
+        scene_light.push_to_shader();
 
-        glm::vec3 orig_cam_pos = camera.position;
+        glm::vec3 orig_cam_pos = camera.cam_pos;
         glm::vec3 ref_cam_pos = glm::vec3(reflection_matrix * glm::vec4(orig_cam_pos, 1.0f));
-        glUniform3fv(glGetUniformLocation(shader_program, "cam_pos"), 1,
-                     glm::value_ptr(ref_cam_pos));
+        glUniform3fv(camera.cam_pos_loc, 1, glm::value_ptr(ref_cam_pos));
 
         // Quando la scena viene disegnata, gli oggetti reali che si trovano
         // fisicamente "oltre" il vetro verranno automaticamente eliminati dalla GPU!
@@ -151,9 +153,8 @@ class Mirror {
         glFrontFace(GL_CCW);
         glDisable(GL_STENCIL_TEST);
 
-        scene_light.vec3_uniforms["light.direct_pos"] = orig_light_pos;
-        scene_light.push_to_shader(shader_program);
-        glUniform3fv(glGetUniformLocation(shader_program, "cam_pos"), 1,
-                     glm::value_ptr(orig_cam_pos));
+        scene_light.direct_pos = orig_light_pos;
+        scene_light.push_to_shader();
+        glUniform3fv(camera.cam_pos_loc, 1, glm::value_ptr(orig_cam_pos));
     }
 };

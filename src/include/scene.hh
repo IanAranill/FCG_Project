@@ -40,7 +40,7 @@ class Scene {
             if (mesh) {
                 // Generazione e Push della Model Matrix e della Normal Matrix per ogni singolo
                 // oggetto
-                mesh->push_material_to_shader(shader_program);
+                mesh->push_material_to_shader();
                 glm::mat4 model_matrix = mesh->get_model_matrix();
                 glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(model_matrix)));
 
