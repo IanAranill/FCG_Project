@@ -52,6 +52,8 @@ class ImguiWrap {
                               0.0f, 1.0f);
             ImGui::DragFloat("Shininess bunny", &bunny.material_shininess, 0.1f);
             ImGui::DragFloat3("Posizione bunny", glm::value_ptr(bunny.position), 0.1f);
+            ImGui::DragFloat3("Rotazione bunny", glm::value_ptr(bunny.rotation), 0.5f, -180.0f,
+                              180.0f);
             float uniform_scale = bunny.scale.x;
             if (ImGui::DragFloat("Scala bunny", &uniform_scale, 0.1f)) {
                 bunny.scale = glm::vec3(uniform_scale);
@@ -67,6 +69,8 @@ class ImguiWrap {
                               0.0f, 1.0f);
             ImGui::DragFloat("Shininess stanza", &corner.material_shininess, 0.1f);
             ImGui::DragFloat3("Posizione stanza", glm::value_ptr(corner.position), 0.1f);
+            ImGui::DragFloat3("Rotazione stanza", glm::value_ptr(corner.rotation), 0.5f, -180.0f,
+                              180.0f);
 
             float uniform_scale = corner.scale.x;
             if (ImGui::DragFloat("Scala stanza", &uniform_scale, 0.1f)) {
@@ -81,6 +85,8 @@ class ImguiWrap {
             }
 
             ImGui::DragFloat3("Posizione specchio", glm::value_ptr(mirror.position), 0.1f);
+            ImGui::DragFloat3("Rotazione specchio", glm::value_ptr(mirror.mesh.rotation), 0.5f,
+                              -180.0f, 180.0f);
             ImGui::DragFloat3("Normale specchio", glm::value_ptr(mirror.normal), 0.05f, -1.0f,
                               1.0f);
 
