@@ -135,6 +135,9 @@ Il risultato è un taglio netto e geometricamente perfetto, che risolve l'artefa
 #### Stage 11
 Aggiunta della gestione delle rotazioni, aggiungendo al pannello di ImGui la possibilità di modificare il valore della matrice di rotazione di ogni mesh. L'applicazione della matrice era già presente per sicurezza che venissero tutte caricate dritte.
 
+#### Stage 12
+Perfezionata la commentatura del progetto eliminando dettagli ormai superflui e aggiunto il bordo frontale allo specchio tramite ID nello stencil buffer per semplificarne la visibilità frontale.
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
