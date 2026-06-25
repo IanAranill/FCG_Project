@@ -14,9 +14,14 @@
 class Scene {
    private:
     std::vector<Mesh*> meshes;
+    GLint model_loc;
+    GLint normal_mat_loc;
 
    public:
-    Scene() = default;
+    Scene(GLuint program) {
+        model_loc = glGetUniformLocation(program, "model");
+        normal_mat_loc = glGetUniformLocation(program, "normal_matrix");
+    }
 
     // --- Gestione della Scena ---
 
@@ -30,12 +35,8 @@ class Scene {
 
     // --- Rendering ---
 
-    void draw(GLuint shader_program) const {
-        // Recuperiamo le location delle variabili uniform dallo shader
-        GLint model_loc = glGetUniformLocation(shader_program, "model");
-        GLint normal_mat_loc = glGetUniformLocation(shader_program, "normal_matrix");
-
-        // Cicliamo attraverso tutte le mesh registrate nella scena
+    void draw() const {
+        // Cicla  attraverso tutte le mesh registrate nella scena
         for (const Mesh* mesh : meshes) {
             if (mesh) {
                 // Generazione e Push della Model Matrix e della Normal Matrix per ogni singolo

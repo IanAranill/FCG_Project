@@ -131,7 +131,7 @@ int main() {
     bunny.position = glm::vec3(0.0f, 0.0f, 0.0f);
     bunny.scale = glm::vec3(1.5f);
 
-    Scene scene;
+    Scene scene(shaders.program);
     scene.add_mesh(&corner);
     scene.add_mesh(&bunny);
 

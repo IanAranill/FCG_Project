@@ -52,7 +52,7 @@ class Mirror {
         scene_light.push_to_shader();
 
         // Disegna Stanza e Coniglio
-        main_scene.draw(shader_program);
+        main_scene.draw();
 
         // ==========================================
         // FASE 2: Disegna il Retro dello Specchio
@@ -142,7 +142,7 @@ class Mirror {
 
         // Quando la scena viene disegnata, gli oggetti reali che si trovano
         // fisicamente "oltre" il vetro verranno automaticamente eliminati dalla GPU!
-        main_scene.draw(shader_program);
+        main_scene.draw();
 
         // ==========================================
         // FASE 5: Ripristino Finale
