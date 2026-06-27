@@ -52,9 +52,7 @@ class Mouse {
 
 #else
 
-    void event(const sf::Event::MouseMovedRaw& e) {
-        accumulated_delta += sf::Vector2f(e.delta);
-    };
+    void event(const sf::Event::MouseMovedRaw& e) { accumulated_delta += sf::Vector2f(e.delta); }
 
     sf::Vector2f delta() {
         sf::Vector2f delta = accumulated_delta;
@@ -62,9 +60,7 @@ class Mouse {
         return delta;
     }
 
-    void setPosition(sf::Vector2i position) const {
-        sf::Mouse::setPosition(position);
-    }
+    void setPosition(sf::Vector2i position) const { sf::Mouse::setPosition(position); }
 
 #endif
 };
