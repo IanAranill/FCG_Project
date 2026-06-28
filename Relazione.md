@@ -138,6 +138,9 @@ Aggiunta della gestione delle rotazioni, aggiungendo al pannello di ImGui la pos
 #### Stage 12
 Perfezionata la commentatura del progetto eliminando dettagli ormai superflui e aggiunto il bordo frontale allo specchio tramite ID nello stencil buffer per semplificarne la visibilità frontale.
 
+#### Stage 13
+Ottimizzazione dei calcoli dello specchio e gestione della normale dello specchio in modo realistico tramite media delle normali degli spigoli dello stesso (funzione update_mesh_transform aggiornata).
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
