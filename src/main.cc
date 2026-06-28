@@ -145,6 +145,7 @@ int main() {
 
     sf::Clock delta_clock;
     bool running = true;
+    shaders.use();
 
     while (running) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -163,12 +164,7 @@ int main() {
             camera.process_mouse_drag(mDelta.x, mDelta.y);
         }
 
-        shaders.use();
-        camera.push_to_shader(aspect_ratio);
-        scene_light.push_to_shader();
-
-        mirror.render_scene_with_mirror(shaders.program, camera, scene, mirror, scene_light,
-                                        aspect_ratio);
+        mirror.render_scene_with_mirror(shaders.program, camera, scene, scene_light, aspect_ratio);
 
         ImguiWrap.update_ImGui(window, elapsed);
         ImguiWrap.draw_ImGui(scene_light, corner, bunny, mirror);

@@ -14,10 +14,11 @@
 class Scene {
    private:
     std::vector<Mesh*> meshes;
+
+   public:
     GLint model_loc;
     GLint normal_mat_loc;
 
-   public:
     Scene(GLuint program) {
         model_loc = glGetUniformLocation(program, "model");
         normal_mat_loc = glGetUniformLocation(program, "normal_matrix");

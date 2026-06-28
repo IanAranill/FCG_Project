@@ -85,14 +85,10 @@ class ImguiWrap {
             }
 
             ImGui::DragFloat3("Posizione specchio", glm::value_ptr(mirror.position), 0.1f);
-            ImGui::DragFloat3("Rotazione specchio", glm::value_ptr(mirror.mesh.rotation), 0.5f,
-                              -180.0f, 180.0f);
-            ImGui::DragFloat3("Normale specchio", glm::value_ptr(mirror.normal), 0.05f, -1.0f,
-                              1.0f);
+            bool rotated = ImGui::DragFloat3(
+                "Rotazione specchio", glm::value_ptr(mirror.mesh.rotation), 0.5f, -180.0f, 180.0f);
 
-            mirror.normal = glm::normalize(mirror.normal);
-            mirror.update_mesh_transform();  // Aggiornamento della trasformazione per il vetro e la
-                                             // cornice
+            mirror.update_mesh_transform(rotated);
         }
         ImGui::End();
 
