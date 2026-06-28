@@ -141,6 +141,8 @@ Perfezionata la commentatura del progetto eliminando dettagli ormai superflui e 
 #### Stage 13
 Ottimizzazione dei calcoli dello specchio e gestione della normale dello specchio in modo realistico tramite media delle normali degli spigoli dello stesso (funzione update_mesh_transform aggiornata).
 
+![Specchio con normale realistica](resources/screenshots/Stage13.png)
+
 ---
 
 ### Codice Esterno e Risorse Utilizzate
