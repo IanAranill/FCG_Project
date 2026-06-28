@@ -143,3 +143,7 @@ In questa fase iniziale, l'infrastruttura di base è stata predisposta. Il motor
 #### Controlli Stage 12
 
 * I controlli rimangono invariati
+
+#### Controlli Stage 13
+
+* Rimosso il controllo della normale dello specchio, ora la normale si aggiorna automaticamente in modo realistico
